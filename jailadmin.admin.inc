@@ -1,6 +1,7 @@
 <?php
 
 require_once('jailadmin.helpers.inc');
+require_once('classes/NetworkDevice.php');
 require_once('classes/Jail.php');
 
 function jailadmin_admin_settings($form, &$form_state) {

@@ -5,19 +5,41 @@ class Jail {
     public $path;
     public $dataset;
     public $route;
+    public $network;
+
+    function __construct() {
+        $this->network = array();
+    }
+
+    public static function LoadAll() {
+        $result = db_query('SELECT name FROM {jailadmin_jails}');
+        $jails = array();
+
+        foreach ($result as $record)
+            $jails[] = Jail::Load($record->name);
+
+        return $jails;
+    }
 
     public static function Load($name) {
         $result = db_query('SELECT * FROM {jailadmin_jails} WHERE name = :name', array(':name' => $name));
 
         $record = $result->fetchAssoc();
-        $j = new Jail;
+        return Jail::LoadFromRecord($record);
+    }
 
-        $j->name = $record['name'];
-        $j->path = $record['path'];
-        $j->dataset = $record['dataset'];
-        $j->route = $record['route'];
+    protected static function LoadFromRecord($record=array()) {
+        if (count($record) == 0)
+            return FALSE;
 
-        return $j;
+        $jail = new Jail;
+        $jail->name = $record['name'];
+        $jail->path = $record['path'];
+        $jail->dataset = $record['dataset'];
+        $jail->route = $record['route'];
+        $jail->devices = NetworkDevice::Load($jail);
+
+        return $jail;
     }
 
     public function Create() {
