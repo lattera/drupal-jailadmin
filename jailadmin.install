@@ -1,0 +1,109 @@
+<?php
+
+function jailadmin_schema() {
+    $schema['jailadmin_jails'] = array(
+        'description' => 'Configured jails',
+        'fields' => array(
+            'name' => array(
+                'type' => 'varchar',
+                'length' => 100,
+                'not null' => TRUE
+            ),
+            'path' => array(
+                'type' => 'varchar',
+                'length' => 500,
+                'not null' => TRUE,
+            ),
+            'dataset' => array(
+                'type' => 'varchar',
+                'length' => 500,
+                'not null' => TRUE,
+            ),
+            'route' => array(
+                'type' => 'varchar',
+                'length' => 45,
+                'not null' => TRUE,
+            ),
+        ),
+        'primary key' => array('name'),
+    );
+
+    $schema['jailadmin_bridges'] = array(
+        'description' => 'Configured bridges',
+        'fields' => array(
+            'name' => array(
+                'type' => 'varchar',
+                'length' => 100,
+                'not null' => TRUE,
+            ),
+            'device' => array(
+                'type' => 'varchar',
+                'length' => 20,
+                'not null' => TRUE,
+            ),
+            'ip' => array(
+                'type' => 'varchar',
+                'length' => 45,
+                'not null' => TRUE,
+            ),
+        ),
+        'primary key' => array('name'),
+    );
+
+    $schema['jailadmin_services'] = array(
+        'description' => 'Services to start when starting the jail',
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'not null' => TRUE,
+            ),
+            'path' => array(
+                'type' => 'varchar',
+                'length' => 500,
+                'not null' => TRUE,
+            ),
+            'jail' => array(
+                'type' => 'varchar',
+                'length' => 100,
+                'not null' => TRUE,
+            ),
+        ),
+        'primary key' => array('id'),
+        'indexes' => array(
+            'jail_index' => array('jail'),
+        ),
+    );
+
+    $schema['jailadmin_epairs'] = array(
+        'description' => 'Virtual NICs assigned to configured jails',
+        'fields' => array(
+            'device' => array(
+                'type' => 'varchar',
+                'length' => 20,
+                'not null' => TRUE,
+            ),
+            'jail' => array(
+                'type' => 'varchar',
+                'length' => 100,
+                'not null' => TRUE,
+            ),
+            'bridge' => array(
+                'type' => 'varchar',
+                'length' => 100,
+                'not null' => TRUE,
+            ),
+            'ip' => array(
+                'type' => 'varchar',
+                'length' => 45,
+                'not null' => TRUE,
+            ),
+        ),
+        'primary key' => array('device'),
+        'indexes' => array(
+            'jail_index' => array('jail'),
+            'bridge_index' => array('bridge'),
+        ),
+    );
+
+    return $schema;
+}

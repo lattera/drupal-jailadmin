@@ -1,0 +1,43 @@
+<?php
+
+/**
+ * Implements hook_permission().
+ */
+function jailadmin_permission() {
+    $perms = array(
+        'administer jails' => array(
+            'title' => t('Administer Wayfair Jail Admin'),
+        ),
+        'start jails' => array(
+            'title' => t('Start/Stop jails'),
+        ),
+    );
+
+    return $perms;
+}
+
+function jailadmin_menu() {
+    /* Admin settings */
+    $items['admin/config/jailadmin'] = array(
+        'title' => 'Wayfair Jail Admin',
+        'description' => 'Wayfair Jail Admin settings',
+        'position' => 'right',
+        'weight' => -5,
+        'page callback' => 'system_admin_menu_block_page',
+        'access arguments' => array('administer jails'),
+        'file' => 'system.admin.inc',
+        'file path' => drupal_get_path('module', 'system'),
+    );
+
+    $items['admin/config/jailadmin/settings'] = array(
+        'title' => 'Wayfair Jail Admin Settings',
+        'description' => 'Settings for Wayfair Jail Admin',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('jailadmin_admin_settings'),
+        'access arguments' => array('administer jails'),
+        'type' => MENU_NORMAL_ITEM,
+        'file' => 'jailadmin.admin.inc',
+    );
+
+    return $items;
+}

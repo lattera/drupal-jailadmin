@@ -1,0 +1,7 @@
+name = Wayfair FreeBSD Jail Administration
+description = Administer FreeBSD Jails
+package = Wayfair Administration
+core = 7.x
+files[] = jailadmin.module
+files[] = jailadmin.install
+files[] = jailadmin.admin.inc
