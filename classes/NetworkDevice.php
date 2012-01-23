@@ -23,6 +23,7 @@ class NetworkDevice {
         $net_device = new NetworkDevice;
         $net_device->device = $record['device'];
         $net_device->ip = $record['ip'];
+        $net_device->bridge = Bridge::Load($record['bridge']);
 
         return $net_device;
     }

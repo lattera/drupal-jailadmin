@@ -39,5 +39,15 @@ function jailadmin_menu() {
         'file' => 'jailadmin.admin.inc',
     );
 
+    $items['admin/config/jailadmin/networks'] = array(
+        'title' => 'Wayfair Jail Networks',
+        'description' => 'Networks for Jails',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('jailadmin_admin_settings_network'),
+        'access arguments' => array('administer jails'),
+        'type' => MENU_NORMAL_ITEM,
+        'file' => 'jailadmin.admin.inc',
+    );
+
     return $items;
 }
