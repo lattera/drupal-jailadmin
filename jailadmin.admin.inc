@@ -28,6 +28,7 @@ function jailadmin_admin_settings($form, &$form_state) {
     $form['new_jail'] = array(
         '#type' => 'fieldset',
         '#title' => t('Add New Jail'),
+        '#description' => t('Only set basic info here. Networking and services are configured elsewhere.'),
         '#collapsible' => TRUE,
         '#collapsed' => FALSE,
     );
@@ -145,6 +146,27 @@ function jailadmin_admin_settings_network($form, &$form_state) {
                     '#suffix' => '</div>',
                 );
             }
+
+            $form['jailadmin_networks']['bring_online'] = array(
+                '#type' => 'submit',
+                '#value' => t('Bring Online'),
+                '#submit' => array('jailadmin_admin_settings_network_bring_online'),
+                '#disabled' => $disabled,
+            );
+
+            $form['jailadmin_networks']['bring_offline'] = array(
+                '#type' => 'submit',
+                '#value' => t('Bring Offline'),
+                '#submit' => array('jailadmin_admin_settings_network_bring_offline'),
+                '#disabled' => !$disabled,
+            );
+
+            $form['jailadmin_networks']['delete'] = array(
+                '#type' => 'submit',
+                '#value' => t('Delete'),
+                '#submit' => array('jailadmin_admin_settings_network_delete'),
+                '#disabled' => $disabled,
+            );
         }
     }
 
@@ -200,6 +222,38 @@ function jailadmin_admin_settings_network_submit($form, &$form_state) {
 
         $network->Persist();
     }
+
+    $form_state['rebuild'] = TRUE;
+}
+
+function jailadmin_admin_settings_network_bring_online($form, &$form_state) {
+    $network = Network::Load($form_state['values']['network']);
+
+    if ($network->BringOnline())
+        drupal_set_message(t('Network @network brought online', array('@network' => $network->name)));
+    else
+        drupal_set_message(t('Network @network failed to start', array('@network' => $network->name)), 'error');
+
+    $form_state['rebuild'] = TRUE;
+}
+
+function jailadmin_admin_settings_network_bring_offline($form, &$form_state) {
+    $network = Network::Load($form_state['values']['network']);
+
+    if ($network->BringOffline())
+        drupal_set_message(t('Network @network brought offline', array('@network' => $network->name)));
+    else
+        drupal_set_message(t('Network @network failed to be brought offline', array('@network' => $network->name)), 'error');
+
+    $form_state['rebuild'] = TRUE;
+}
+
+function jailadmin_admin_settings_network_delete($form, &$form_state) {
+    $network = Network::Load($form_state['values']['network']);
+
+    $network->Delete();
+
+    drupal_set_message(t('Network @network deleted', array('@network' => $network->name)));
 
     $form_state['rebuild'] = TRUE;
 }

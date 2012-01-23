@@ -32,8 +32,27 @@ class Network {
     }
 
     public function IsOnline() {
-        $o = exec("ifconfig {$this->device} 2>&1 | grep -v \"does not exist\"");
+        $o = exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} 2>&1 | grep -v \"does not exist\"");
         return strlen($o) > 0;
+    }
+
+    public function BringOnline() {
+        if ($this->IsOnline())
+            return TRUE;
+
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} create 2>&1");
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} {$this->ip}");
+
+        return TRUE;
+    }
+
+    public function BringOffline() {
+        if ($this->IsOnline() == FALSE)
+            return TRUE;
+
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} destroy");
+
+        return TRUE;
     }
 
     public function Persist() {
