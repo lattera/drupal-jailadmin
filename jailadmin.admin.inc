@@ -212,6 +212,11 @@ function jailadmin_admin_settings_network_submit($form, &$form_state) {
         $network->ip = $form_state['values']['new_ip'];
 
         $network->Create();
+
+        /* Reset form to be able to select the network without attempting to create a new one of the same name */
+        $form_state['input']['new_name'] = '';
+        $form_state['input']['new_ip'] = '';
+        $form_state['input']['new_device'] = '';
     }
 
     if (isset($form_state['values']['device']) && strlen($form_state['values']['device'])) {
