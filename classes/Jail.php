@@ -47,6 +47,13 @@ class Jail {
         return strlen($o) > 0;
     }
 
+    public function IsOnlineString() {
+        if ($this->IsOnline())
+            return 'Online';
+
+        return 'Offline';
+    }
+
     public function Start() {
         if ($this->IsOnline())
             if ($this->Stop() == FALSE)

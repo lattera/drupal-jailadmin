@@ -49,5 +49,26 @@ function jailadmin_menu() {
         'file' => 'jailadmin.admin.inc',
     );
 
+    /* Actions */
+    $items['jailadmin/status'] = array(
+        'title' => 'Jail Status',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('jailadmin_status'),
+        'file' => 'jailstatus.inc',
+        'access callback' => 'user_access',
+        'access arguments' => array('adminster jails'),
+        'type' => MENU_NORMAL_ITEM,
+    );
+
+    $items['jailadmin/%/config'] = array(
+        'title' => 'Configure Jails',
+        'page callback' => 'jailadmin_config',
+        'page arguments' => array(1),
+        'file' => 'jailconfig.inc',
+        'access callback' => 'user_access',
+        'access arguments' => array('administer jails'),
+        'type' => MENU_NORMAL_ITEM,
+    );
+
     return $items;
 }
