@@ -105,5 +105,22 @@ function jailadmin_schema() {
         ),
     );
 
+    $schema['jailadmin_templates'] = array(
+        'description' => 'ZFS Templates',
+        'fields' => array(
+            'name' => array(
+                'type' => 'varchar',
+                'length' => 100,
+                'not null' => TRUE,
+            ),
+            'snapshot' => array(
+                'type' => 'varchar',
+                'length' => 500,
+                'not null' => TRUE,
+            ),
+        ),
+        'primary key' => array('name'),
+    );
+
     return $schema;
 }

@@ -8,6 +8,7 @@ require_once('classes/Jail.php');
 
 function jailadmin_admin_settings($form, &$form_state) {
     $jails = get_all_jails_for_select();
+    $templates = get_all_templates_for_select();
 
     if (count($jails)) {
         $form['jails'] = array(
@@ -24,7 +25,41 @@ function jailadmin_admin_settings($form, &$form_state) {
             '#description' => t('Select one or more to delete'),
             '#options' => $jails,
         );
+
+        $form['jails']['zfs_destroy'] = array(
+            '#type' => 'checkbox',
+            '#title' => t('Destroy ZFS Dataset?'),
+        );
     }
+
+    $form['templates'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Template Jails'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+    );
+
+    if (count($templates)) {
+        $form['templates']['existing_templates'] = array(
+            '#type' => 'select',
+            '#title' => t('Existing Templates'),
+            '#description' => t('Select one or more to delete'),
+            '#multiple' => TRUE,
+            '#options' => $templates,
+        );
+    }
+
+    $form['templates']['new_template_name'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Name'),
+        '#size' => 60,
+    );
+
+    $form['templates']['new_template_snapshot'] = array(
+        '#type' => 'textfield',
+        '#title' => t('ZFS Dataset@Snapshot'),
+        '#size' => 60,
+    );
 
     $form['new_jail'] = array(
         '#type' => 'fieldset',
@@ -58,12 +93,14 @@ function jailadmin_admin_settings($form, &$form_state) {
         '#size' => 30,
     );
 
-    $form['new_jail']['new_template'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Template Jail dataset@snapshot'),
-        '#size' => 30,
-        '#description' => t('Only if creating from a template'),
-    );
+    if (count($templates)) {
+        $form['new_jail']['new_template'] = array(
+            '#type' => 'select',
+            '#title' => t('Template Jail'),
+            '#options' => $templates,
+            '#description' => t('Only if creating from a template'),
+        );
+    }
 
     $form['submit'] = array(
         '#type' => 'submit',
@@ -76,16 +113,35 @@ function jailadmin_admin_settings($form, &$form_state) {
 function jailadmin_admin_settings_submit($form, &$form_state) {
     if (isset($form_state['values']['existing'])) {
         foreach (array_filter($form_state['values']['existing']) as $name) {
+            $destroy = FALSE;
+            if (isset($form_state['values']['zfs_destroy']) && $form_state['values']['zfs_destroy'] == '1')
+                $destroy = TRUE;
+
             $j = Jail::Load($name);
-            $j->Delete();
+            $j->Delete($destroy);
+        }
+    }
+
+    if (isset($form_state['values']['existing_templates'])) {
+        foreach (array_filter($form_state['values']['existing_templates']) as $template) {
+            if (strlen($template) == 0)
+                continue;
+
+            db_delete('jailadmin_templates')
+                ->condition('snapshot', $template)
+                ->execute();
         }
     }
 
     if (isset($form_state['values']['new_name']) && strlen($form_state['values']['new_name'])) {
+        $template = '';
         $name = $form_state['values']['new_name'];
         $path = $form_state['values']['new_path'];
         $dataset = $form_state['values']['new_dataset'];
         $route = $form_state['values']['new_route'];
+
+        if (isset($form_state['values']['new_template']) && strlen($form_state['values']['new_template']))
+            $template = $form_state['values']['new_template'];
 
         $j = new Jail;
         $j->name = $name;
@@ -93,7 +149,24 @@ function jailadmin_admin_settings_submit($form, &$form_state) {
         $j->dataset = $dataset;
         $j->route = $route;
 
-        $j->Create();
+        $j->Create($template);
+
+        $form_state['input']['new_name'] = '';
+        $form_state['input']['new_path'] = '';
+        $form_state['input']['new_dataset'] = '';
+        $form_state['input']['new_route'] = '';
+        $form_state['input']['new_template'] = '';
+    }
+
+    if (isset($form_state['values']['new_template_name']) && strlen($form_state['values']['new_template_name'])) {
+        db_insert('jailadmin_templates')
+            ->fields(array(
+                'name' => $form_state['values']['new_template_name'],
+                'snapshot' => $form_state['values']['new_template_snapshot'],
+            ))->execute();
+
+        $form_state['input']['new_template_name'] = '';
+        $form_state['input']['new_template_snapshot'] = '';
     }
 
     $form_state['rebuild'] = TRUE;

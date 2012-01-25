@@ -92,7 +92,12 @@ class Jail {
         return TRUE;
     }
 
-    public function Create() {
+    public function Create($template='') {
+        if (strlen($template)) {
+            /* If $template is set, we need to create this jail */
+            exec("/usr/local/bin/sudo zfs clone {$template} {$this->dataset}");
+        }
+
         db_insert('jailadmin_jails')
             ->fields(array(
                 'name' => $this->name,
@@ -102,9 +107,12 @@ class Jail {
             ))->execute();
     }
 
-    public function Delete() {
+    public function Delete($destroy) {
         db_delete('jailadmin_jails')
             ->condition('name', $this->name)
             ->execute();
+
+        if ($destroy)
+            exec("/usr/local/bin/sudo /sbin/zfs destroy {$this->dataset}");
     }
 }

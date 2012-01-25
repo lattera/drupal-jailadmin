@@ -38,3 +38,14 @@ function get_all_services_for_select($jail) {
 
     return $services;
 }
+
+function get_all_templates_for_select() {
+    $result = db_query('SELECT * FROM {jailadmin_templates}');
+    $templates = array();
+    $templates[] = '[NO TEMPLATE]';
+
+    foreach ($result as $record)
+        $templates[$record->snapshot] = $record->name;
+
+    return $templates;
+}
