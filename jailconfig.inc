@@ -165,6 +165,19 @@ function jailadmin_config($form, &$form_state) {
         '#disabled' => !$jail->IsOnline(),
     );
 
+    $form['jail_actions']['snapshot'] = array(
+        '#type' => 'submit',
+        '#value' => t('Snapshot'),
+        '#submit' => array('jail_actions_snapshot'),
+    );
+
+    $form['jail_actions']['upgrade'] = array(
+        '#type' => 'submit',
+        '#value' => t('Upgrade World'),
+        '#submit' => array('jail_actions_upgrade'),
+        '#disabled' => $jail->IsOnline(),
+    );
+
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Save Configuration'),
@@ -262,6 +275,28 @@ function jail_actions_stop($form, &$form_state) {
         drupal_set_message(t('Jail @jail stopped successfully', array('@jail' => $jail->name)));
     else
         drupal_set_message(t('Jail @jail failed to stop', array('@jail' => $jail->name)), 'error');
+
+    $form_state['rebuild'] = TRUE;
+}
+
+function jail_actions_snapshot($form, &$form_state) {
+    $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if ($jail->Snapshot())
+        drupal_set_message(t('Jail @jail snapshot successful', array('@jail' => $jail->name)));
+    else
+        drupal_set_message(t('Jail @jail snapshot unsuccessful', array('@jail' => $jail->name)));
+
+    $form_state['rebuild'] = TRUE;
+}
+
+function jail_actions_upgrade($form, &$form_state) {
+    $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if ($jail->UpgradeWorld())
+        drupal_set_message(t('Jail @jail upgraded successfully', array('@jail' => $jail->name)));
+    else
+        drupal_set_message(t('Jail @jail upgraded unsuccessfully', array('@jail' => $jail->name)));
 
     $form_state['rebuild'] = TRUE;
 }

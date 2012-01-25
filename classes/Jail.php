@@ -110,6 +110,28 @@ class Jail {
         return TRUE;
     }
 
+    public function Snapshot() {
+        $date = strftime("%F_%T");
+
+        exec("/usr/local/bin/sudo /sbin/zfs snapshot {$this->dataset}@{$date}");
+
+        return TRUE;
+    }
+
+    public function UpgradeWorld() {
+        if ($this->IsOnline())
+            return FALSE;
+
+        $date = strftime("%F_%T");
+
+        if ($this->Snapshot() == FALSE)
+            return FALSE;
+
+        exec("cd /usr/src; /usr/local/bin/sudo make installworld DESTDIR={$this->path} > /tmp/upgrade-{$this->name}-{$date}.log 2>&1");
+
+        return TRUE;
+    }
+
     public function Create($template='') {
         if (strlen($template)) {
             /* If $template is set, we need to create this jail */
