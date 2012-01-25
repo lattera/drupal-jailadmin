@@ -19,3 +19,13 @@ function get_all_networks_for_select() {
     
     return $networks;
 }
+
+function get_all_network_devices_for_select($jail) {
+    $networks = array();
+
+    foreach ($jail->network as $network) {
+        $networks[$network->device] = t($network->device . ' (' . $network->ip . ')');
+    }
+
+    return $networks;
+}

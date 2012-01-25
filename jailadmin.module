@@ -61,9 +61,9 @@ function jailadmin_menu() {
     );
 
     $items['jailadmin/%/config'] = array(
-        'title' => 'Configure Jails',
-        'page callback' => 'jailadmin_config',
-        'page arguments' => array(1),
+        'title' => 'Configure Jail',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('jailadmin_config', 1),
         'file' => 'jailconfig.inc',
         'access callback' => 'user_access',
         'access arguments' => array('administer jails'),

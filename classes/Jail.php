@@ -37,7 +37,7 @@ class Jail {
         $jail->path = $record['path'];
         $jail->dataset = $record['dataset'];
         $jail->route = $record['route'];
-        $jail->devices = NetworkDevice::Load($jail);
+        $jail->network = NetworkDevice::Load($jail);
 
         return $jail;
     }
@@ -59,11 +59,11 @@ class Jail {
             if ($this->Stop() == FALSE)
                 return FALSE;
 
-        foreach ($this->network as $n)
-            $n->BringHostOnline();
-
         exec("/usr/local/bin/sudo /sbin/mount -t devfs devfs {$this->path}/dev");
         exec("/usr/local/bin/sudo /usr/sbin/jail -c vnet 'name={$this->name}' 'host.hostname={$this->name}' 'path={$this->path}' persist");
+
+        foreach ($this->network as $n)
+            $n->BringHostOnline();
 
         foreach ($this->network as $n)
             $n->BringGuestOnline();

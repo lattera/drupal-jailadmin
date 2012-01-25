@@ -4,7 +4,7 @@ class NetworkDevice {
     public $device;
     public $ip;
     public $bridge;
-    protected $jail;
+    public $jail;
 
     public static function Load($jail) {
         $result = db_query('SELECT * FROM {jailadmin_epairs} WHERE jail = :jail', array(':jail' => $jail->name));
@@ -15,6 +15,13 @@ class NetworkDevice {
             $devices[] = NetworkDevice::LoadFromRecord($jail, $record);
 
         return $devices;
+    }
+
+    public static function LoadByDeviceName($jail, $name) {
+        $result = db_query('SELECT * FROM {jailadmin_epairs} WHERE device = :device', array(':device' => $name));
+
+        $record = $result->fetchAssoc();
+        return NetworkDevice::LoadFromRecord($jail, $record);
     }
 
     public function IsOnline() {
@@ -37,7 +44,7 @@ class NetworkDevice {
     }
 
     public function BringGuestOnline() {
-        if ($jail->IsOnline() == FALSE)
+        if ($this->jail->IsOnline() == FALSE)
             return FALSE;
 
         if ($this->IsOnline() == FALSE)
@@ -45,7 +52,7 @@ class NetworkDevice {
                 return FALSE;
 
         exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}b vnet {$this->jail->name}");
-        exec("/usr/local/bin/sudo /usr/sbin/jexec {$jail->name} ifconfig {$this->device}b {$this->ip}");
+        exec("/usr/local/bin/sudo /usr/sbin/jexec {$this->jail->name} ifconfig {$this->device}b {$this->ip}");
 
         return TRUE;
     }
@@ -66,9 +73,26 @@ class NetworkDevice {
         $net_device = new NetworkDevice;
         $net_device->device = $record['device'];
         $net_device->ip = $record['ip'];
-        $net_device->bridge = Bridge::Load($record['bridge']);
+        $net_device->bridge = Network::Load($record['bridge']);
         $net_device->jail = $jail;
 
         return $net_device;
+    }
+
+    public function Create() {
+        db_insert('jailadmin_epairs')
+            ->fields(array(
+                'jail' => $this->jail->name,
+                'device' => $this->device,
+                'bridge' => $this->bridge->name,
+                'ip' => $this->ip,
+            ))->execute();
+    }
+
+    public function Delete() {
+        db_delete('jailadmin_epairs')
+            ->condition('device', $this->device)
+            ->condition('jail', $this->jail->name)
+            ->execute();
     }
 }
