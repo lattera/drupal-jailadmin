@@ -7,6 +7,7 @@ class Jail {
     public $route;
     public $network;
     public $services;
+    public $mounts;
 
     function __construct() {
         $this->network = array();
@@ -41,6 +42,7 @@ class Jail {
         $jail->route = $record['route'];
         $jail->network = NetworkDevice::Load($jail);
         $jail->services = Service::Load($jail);
+        $jail->mounts = Mount::Load($jail);
 
         return $jail;
     }
@@ -73,6 +75,16 @@ class Jail {
 
         exec("/usr/local/bin/sudo /usr/sbin/jexec {$this->name} route add default {$this->route}");
 
+        foreach ($this->mounts as $mount) {
+            $command = "/usr/local/bin/sudo /sbin/mount ";
+            if (strlen($mount->driver))
+                $command .= "-t {$mount->driver} ";
+            if (strlen($mount->options))
+                $command .= "-o {$mount->options} ";
+
+            exec("{$command} {$mount->source} {$this->path}/{$mount->target}");
+        }
+
         foreach ($this->services as $service)
             exec("/usr/local/bin/sudo /usr/sbin/jexec {$this->name} {$service->path} start");
 
@@ -85,6 +97,12 @@ class Jail {
 
         exec("/usr/local/bin/sudo /usr/sbin/jail -r {$this->name}");
         exec("/usr/local/bin/sudo /sbin/umount {$this->path}/dev");
+
+        foreach ($this->mounts as $mount) {
+            $command = "/usr/local/bin/sudo /sbin/umount ";
+
+            exec("{$command} -f {$this->path}/{$mount->target}");
+        }
 
         foreach ($this->network as $n)
             $n->BringOffline();

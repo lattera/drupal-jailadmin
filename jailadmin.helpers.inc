@@ -49,3 +49,12 @@ function get_all_templates_for_select() {
 
     return $templates;
 }
+
+function get_all_mounts_for_select($jail) {
+    $mounts = array();
+
+    foreach ($jail->mounts as $mount)
+        $mounts[$mount->target] = $mount->target;
+
+    return $mounts;
+}

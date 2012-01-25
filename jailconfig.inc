@@ -1,6 +1,7 @@
 <?php
 
 require_once('jailadmin.helpers.inc');
+require_once('classes/Mount.php');
 require_once('classes/Service.php');
 require_once('classes/Network.php');
 require_once('classes/NetworkDevice.php');
@@ -10,16 +11,20 @@ function jailadmin_config($form, &$form_state) {
     $jail = Jail::Load($form_state['build_info']['args'][0]);
     $network_devices = get_all_network_devices_for_select($jail);
     $services = get_all_services_for_select($jail);
+    $mounts = get_all_mounts_for_select($jail);
 
     $form['base'] = array(
         '#type' => 'fieldset',
         '#title' => t('Base Settings'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
     );
 
     $form['base']['dataset'] = array(
         '#type' => 'textfield',
         '#title' => t('ZFS Dataset'),
         '#size' => 60,
+        '#disabled' => $jail->IsOnline(),
         '#default_value' => $jail->dataset,
     );
 
@@ -27,6 +32,7 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'textfield',
         '#title' => t('Path'),
         '#size' => 60,
+        '#disabled' => $jail->IsOnline(),
         '#default_value' => $jail->path,
     );
 
@@ -34,12 +40,15 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'textfield',
         '#title' => t('Default Route'),
         '#size' => 60,
+        '#disabled' => $jail->IsOnline(),
         '#default_value' => $jail->route,
     );
 
     $form['network_devices'] = array(
         '#type' => 'fieldset',
         '#title' => t('Network Devices'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
     );
 
     if (count($network_devices)) {
@@ -75,6 +84,8 @@ function jailadmin_config($form, &$form_state) {
     $form['services'] = array(
         '#type' => 'fieldset',
         '#title' => t('Services'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
     );
 
     if (count($services)) {
@@ -89,6 +100,49 @@ function jailadmin_config($form, &$form_state) {
     $form['services']['new_service'] = array(
         '#type' => 'textfield',
         '#title' => t('New Service'),
+        '#size' => 60,
+    );
+
+    $form['mounts'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Custom Mount Points'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+    );
+
+    if (count($mounts)) {
+        $form['mounts']['existing_mounts'] = array(
+            '#type' => 'select',
+            '#title' => t('Existing Mounts'),
+            '#description' => t('Select one or more to delete'),
+            '#multiple' => TRUE,
+            '#options' => $mounts,
+        );
+    }
+
+    $form['mounts']['new_mount_source'] = array(
+        '#type' => 'textfield',
+        '#title' => t('New mount source'),
+        '#size' => 60,
+    );
+
+    $form['mounts']['new_mount_target'] = array(
+        '#type' => 'textfield',
+        '#title' => t('New mount target'),
+        '#description' => t('Without jail path prefix. (e.g. /mnt)'),
+        '#size' => 60,
+    );
+
+    $form['mounts']['new_mount_driver'] = array(
+        '#type' => 'textfield',
+        '#title' => t('New mount driver'),
+        '#description' => t('Driver for -t argument. (e.g. nullfs)'),
+        '#size' => 60,
+    );
+
+    $form['mounts']['new_mount_options'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Extra options'),
         '#size' => 60,
     );
 
@@ -127,6 +181,30 @@ function jailadmin_config_submit($form, &$form_state) {
             $network_device = NetworkDevice::LoadByDeviceName($jail, $device);
             $network_device->Delete();
         }
+    }
+
+    if (isset($form_state['values']['existing_mounts'])) {
+        foreach (array_filter($form_state['values']['existing_mounts']) as $target) {
+            $mount = Mount::LoadByTarget($jail, $target);
+            $mount->Delete();
+        }
+    }
+
+    if (isset($form_state['values']['new_mount_source']) && strlen($form_state['values']['new_mount_source'])) {
+        $mount = new Mount;
+
+        $mount->jail = $jail;
+        $mount->source = $form_state['values']['new_mount_source'];
+        $mount->target = $form_state['values']['new_mount_target'];
+        $mount->driver = $form_state['values']['new_mount_driver'];
+        $mount->options = $form_state['values']['new_mount_options'];
+
+        $mount->Create();
+
+        $form_state['input']['new_mount_source'] = '';
+        $form_state['input']['new_mount_target'] = '';
+        $form_state['input']['new_mount_driver'] = '';
+        $form_state['input']['new_mount_options'] = '';
     }
 
     if (isset($form_state['values']['new_network_device']) && strlen($form_state['values']['new_network_device'])) {

@@ -1,6 +1,7 @@
 <?php
 
 require_once('jailadmin.helpers.inc');
+require_once('classes/Mount.php');
 require_once('classes/Service.php');
 require_once('classes/Network.php');
 require_once('classes/NetworkDevice.php');

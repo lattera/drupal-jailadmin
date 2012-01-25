@@ -122,5 +122,39 @@ function jailadmin_schema() {
         'primary key' => array('name'),
     );
 
+    $schema['jailadmin_mounts'] = array(
+        'description' => 'Custom mounts',
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'not null' => TRUE,
+            ),
+            'jail' => array(
+                'type' => 'varchar',
+                'length' => 100,
+                'not null' => TRUE,
+            ),
+            'target' => array(
+                'type' => 'varchar',
+                'length' => 500,
+                'not null' => TRUE,
+            ),
+            'source' => array(
+                'type' => 'varchar',
+                'length' => 500,
+                'not null' => TRUE,
+            ),
+            'driver' => array(
+                'type' => 'varchar',
+                'length' => 50,
+            ),
+            'options' => array(
+                'type' => 'varchar',
+                'length' => 200,
+            ),
+        ),
+        'primary key' => array('id'),
+    );
+
     return $schema;
 }
