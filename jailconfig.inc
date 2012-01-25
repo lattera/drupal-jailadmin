@@ -1,6 +1,7 @@
 <?php
 
 require_once('jailadmin.helpers.inc');
+require_once('classes/Service.php');
 require_once('classes/Network.php');
 require_once('classes/NetworkDevice.php');
 require_once('classes/Jail.php');
@@ -8,6 +9,7 @@ require_once('classes/Jail.php');
 function jailadmin_config($form, &$form_state) {
     $jail = Jail::Load($form_state['build_info']['args'][0]);
     $network_devices = get_all_network_devices_for_select($jail);
+    $services = get_all_services_for_select($jail);
 
     $form['base'] = array(
         '#type' => 'fieldset',
@@ -70,6 +72,26 @@ function jailadmin_config($form, &$form_state) {
         '#options' => get_all_networks_for_select(),
     );
 
+    $form['services'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Services'),
+    );
+
+    if (count($services)) {
+        $form['services']['services'] = array(
+            '#type' => 'select',
+            '#multiple' => TRUE,
+            '#description' => t('Select one or more to delete'),
+            '#options' => $services,
+        );
+    }
+
+    $form['services']['new_service'] = array(
+        '#type' => 'textfield',
+        '#title' => t('New Service'),
+        '#size' => 60,
+    );
+
     $form['jail_actions'] = array(
         '#type' => 'fieldset',
         '#title' => t('Jail Actions'),
@@ -119,6 +141,26 @@ function jailadmin_config_submit($form, &$form_state) {
 
         $form_state['input']['new_network_device'] = '';
         $form_state['input']['new_network_ip'] = '';
+    }
+
+    if (isset($form_state['values']['services'])) {
+        foreach (array_filter($form_state['values']['services']) as $raw_service) {
+            $service = new Service;
+            $service->jail = $jail;
+            $service->path = $raw_service;
+
+            $service->Delete();
+        }
+    }
+
+    if (isset($form_state['values']['new_service']) && strlen($form_state['values']['new_service'])) {
+        $service = new Service;
+        $service->jail = $jail;
+        $service->path = $form_state['values']['new_service'];
+
+        $service->Create();
+
+        $form_state['input']['new_service'] = '';
     }
 
     $form_state['rebuild']  = TRUE;

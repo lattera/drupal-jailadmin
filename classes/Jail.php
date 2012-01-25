@@ -6,9 +6,11 @@ class Jail {
     public $dataset;
     public $route;
     public $network;
+    public $services;
 
     function __construct() {
         $this->network = array();
+        $this->services = array();
     }
 
     public static function LoadAll() {
@@ -38,6 +40,7 @@ class Jail {
         $jail->dataset = $record['dataset'];
         $jail->route = $record['route'];
         $jail->network = NetworkDevice::Load($jail);
+        $jail->services = Service::Load($jail);
 
         return $jail;
     }
@@ -69,6 +72,9 @@ class Jail {
             $n->BringGuestOnline();
 
         exec("/usr/local/bin/sudo /usr/sbin/jexec {$this->name} route add default {$this->route}");
+
+        foreach ($this->services as $service)
+            exec("/usr/local/bin/sudo /usr/sbin/jexec {$this->name} {$service->path} start");
 
         return TRUE;
     }

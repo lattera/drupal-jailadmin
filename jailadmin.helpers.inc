@@ -29,3 +29,12 @@ function get_all_network_devices_for_select($jail) {
 
     return $networks;
 }
+
+function get_all_services_for_select($jail) {
+    $services = array();
+
+    foreach ($jail->services as $service)
+        $services[$service->path] = $service->path;
+
+    return $services;
+}
