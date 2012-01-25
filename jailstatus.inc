@@ -10,11 +10,11 @@ require_once('classes/Jail.php');
 function jailadmin_status($form, &$form_state) {
     $jails = Jail::LoadAll();
 
-    $header = array('Jail Name', 'Status');
+    $header = array('Jail Name', 'Status', 'Network Status');
     $rows = array();
     foreach ($jails as $jail) {
         $name = l(t($jail->name), 'jailadmin/' . $jail->name . '/config');
-        $rows[] = array($name, $jail->IsOnlineString());
+        $rows[] = array($name, $jail->IsOnlineString(), $jail->NetworkStatus());
     }
 
     $form['jails'] = array(

@@ -59,6 +59,15 @@ class Jail {
         return 'Offline';
     }
 
+    public function NetworkStatus() {
+        $status = "";
+
+        foreach ($this->network as $n)
+            $status .= (strlen($status) ? ", " : "") . $n->ip . ($n->IsOnline() ? " (online)" : " (offline)");
+
+        return $status;
+    }
+
     public function Start() {
         if ($this->IsOnline())
             if ($this->Stop() == FALSE)
