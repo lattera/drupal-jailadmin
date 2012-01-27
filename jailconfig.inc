@@ -178,6 +178,13 @@ function jailadmin_config($form, &$form_state) {
         '#disabled' => $jail->IsOnline(),
     );
 
+    $form['jail_actions']['setup_services'] = array(
+        '#type' => 'submit',
+        '#value' => t('Setup Services'),
+        '#submit' => array('jail_actions_setup_services'),
+        '#disabled' => $jail->IsOnline(),
+    );
+
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Save Configuration'),
@@ -294,9 +301,17 @@ function jail_actions_upgrade($form, &$form_state) {
     $jail = Jail::Load($form_state['build_info']['args'][0]);
 
     if ($jail->UpgradeWorld())
-        drupal_set_message(t('Jail @jail upgraded successfully', array('@jail' => $jail->name)));
+        drupal_set_message(t('Jail @jail upgraded successfully. NOTE: Upgrade started in background. Wait a few minutes before starting jail.', array('@jail' => $jail->name)));
     else
         drupal_set_message(t('Jail @jail upgraded unsuccessfully', array('@jail' => $jail->name)));
+
+    $form_state['rebuild'] = TRUE;
+}
+
+function jail_actions_setup_services($form, &$form_state) {
+    $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    $jail->SetupServices();
 
     $form_state['rebuild'] = TRUE;
 }

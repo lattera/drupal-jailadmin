@@ -141,6 +141,12 @@ class Jail {
         return TRUE;
     }
 
+    public function SetupServices() {
+        if (count($this->network)) {
+            exec("/usr/local/bin/sudo /bin/sh -c '/bin/echo \"ListenAddress {$this->network[0]->ip}\" >> {$this->path}/etc/ssh/sshd_config'");
+        }
+    }
+
     public function Create($template='') {
         if (strlen($template)) {
             /* If $template is set, we need to create this jail */
