@@ -44,10 +44,26 @@ function jailadmin_schema() {
             'ip' => array(
                 'type' => 'varchar',
                 'length' => 45,
-                'not null' => TRUE,
             ),
         ),
         'primary key' => array('name'),
+    );
+
+    $schema['jailadmin_bridge_physicals'] = array(
+        'description' => 'Physical devices to include in the bridge',
+        'fields' => array(
+            'bridge' => array(
+                'type' => 'varchar',
+                'length' => 100,
+                'not null' => TRUE,
+            ),
+            'device' => array(
+                'type' => 'varchar',
+                'length' => 20,
+                'not null' => TRUE
+            ),
+        ),
+        'primary key' => array('bridge', 'device'),
     );
 
     $schema['jailadmin_services'] = array(

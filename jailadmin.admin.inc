@@ -213,6 +213,25 @@ function jailadmin_admin_settings_network($form, &$form_state) {
                 '#disabled' => $disabled,
             );
 
+            if (count($network->physicals)) {
+                $form['jailadmin_networks']['physical_devices'] = array(
+                    '#type' => 'select',
+                    '#title' => t('Existing physical devices added to bridge'),
+                    '#description' => t('Select one or more to remove'),
+                    '#multiple' => TRUE,
+                    '#disabled' => $disabled,
+                    '#options' => drupal_map_assoc($network->physicals),
+                );
+            }
+
+            $form['jailadmin_networks']['new_physical_device'] = array(
+                '#type' => 'textfield',
+                '#title' => t('Add new physical device'),
+                '#description' => t('Add a physical device to be added to the bridge'),
+                '#size' => 60,
+                '#disabled' => $disabled,
+            );
+
             if ($disabled) {
                 $form['jailadmin_networks']['disabled_notice'] = array(
                     '#type' => 'markup',
@@ -270,6 +289,12 @@ function jailadmin_admin_settings_network($form, &$form_state) {
         '#size' => 60,
     );
 
+    $form['select_network'] = array(
+        '#type' => 'submit',
+        '#submit' => array('jailadmin_admin_settings_network_select_network_submit'),
+        '#value' => t('Select Network'),
+    );
+
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Save'),
@@ -278,7 +303,24 @@ function jailadmin_admin_settings_network($form, &$form_state) {
     return $form;
 }
 
+function jailadmin_admin_settings_network_select_network_submit($form, &$form_state) {
+    $form_state['rebuild'] = 'true';
+}
+
 function jailadmin_admin_settings_network_submit($form, &$form_state) {
+    if (isset($form_state['values']['physical_devices'])) {
+        foreach (array_filter($form_state['values']['physical_devices']) as $device)
+            drupal_set_message(t('gonna remove device @device', array('@device' => $device)));
+    }
+
+    if (isset($form_state['values']['new_physical_device']) && strlen($form_state['values']['new_physical_device'])) {
+        db_insert('jailadmin_bridge_physicals')
+            ->fields(array(
+                'bridge' => $form_state['values']['network'],
+                'device' => $form_state['values']['new_physical_device'],
+            ))->execute();
+    }
+
     if (isset($form_state['values']['new_name']) && strlen($form_state['values']['new_name'])) {
         $network = new Network;
 

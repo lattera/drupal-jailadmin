@@ -4,6 +4,11 @@ class Network {
     public $name;
     public $device;
     public $ip;
+    public $physicals;
+
+    public function __construct() {
+        $this->physicals = array();
+    }
 
     public static function Load($name) {
         $result = db_query('SELECT * FROM {jailadmin_bridges} WHERE name = :name', array(':name' => $name));
@@ -28,6 +33,11 @@ class Network {
         $network->device = $record['device'];
         $network->ip = $record['ip'];
 
+        /* Load physical devices to add to the bridge */
+        $result = db_query('SELECT device FROM {jailadmin_bridge_physicals} WHERE bridge = :bridge', array(':bridge' => $network->name));
+        foreach ($result as $physical)
+            $network->physicals[] = $physical->device;
+
         return $network;
     }
 
@@ -41,7 +51,12 @@ class Network {
             return TRUE;
 
         exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} create 2>&1");
-        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} {$this->ip}");
+
+        if (strlen($this->ip))
+            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} {$this->ip}");
+
+        foreach ($this->physicals as $physical)
+            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} addm {$physical}");
 
         return TRUE;
     }
