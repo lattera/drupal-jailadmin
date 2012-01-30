@@ -22,7 +22,6 @@ function jailadmin_schema() {
             'route' => array(
                 'type' => 'varchar',
                 'length' => 45,
-                'not null' => TRUE,
             ),
         ),
         'primary key' => array('name'),

@@ -82,7 +82,8 @@ class Jail {
         foreach ($this->network as $n)
             $n->BringGuestOnline();
 
-        exec("/usr/local/bin/sudo /usr/sbin/jexec {$this->name} route add default {$this->route}");
+        if (strlen($this->route))
+            exec("/usr/local/bin/sudo /usr/sbin/jexec {$this->name} route add default {$this->route}");
 
         foreach ($this->mounts as $mount) {
             $command = "/usr/local/bin/sudo /sbin/mount ";

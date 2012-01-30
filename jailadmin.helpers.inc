@@ -14,8 +14,11 @@ function get_all_networks_for_select() {
     $all = Network::LoadAll();
     $networks = array();
 
-    foreach ($all as $network)
-        $networks[$network->name] = $network->name . ' (' . $network->ip . ')';
+    foreach ($all as $network) {
+        $ip = (strlen($network->ip)) ? $network->ip : "NO IP";
+
+        $networks[$network->name] = $network->name . ' (' . $ip . ')';
+    }
     
     return $networks;
 }
@@ -24,7 +27,9 @@ function get_all_network_devices_for_select($jail) {
     $networks = array();
 
     foreach ($jail->network as $network) {
-        $networks[$network->device] = t($network->device . ' (' . $network->ip . ')');
+        $ip = (strlen($network->ip)) ? $network->ip : "NO IP";
+
+        $networks[$network->device] = t($network->device . ' (' . $ip . ')');
     }
 
     return $networks;
