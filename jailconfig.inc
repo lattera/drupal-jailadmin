@@ -195,6 +195,22 @@ function jailadmin_config($form, &$form_state) {
 
 function jailadmin_config_submit($form, &$form_state) {
     $jail = Jail::Load($form_state['build_info']['args'][0]);
+    $dirty = FALSE;
+
+    if (isset($form_state['values']['route']) && strcmp($jail->route, $form_state['values']['route'])) {
+        $jail->route = $form_state['values']['route'];
+        $dirty = TRUE;
+    }
+
+    if (isset($form_state['values']['path']) && strcmp($jail->path, $form_state['values']['path'])) {
+        $jail->path = $form_state['values']['path'];
+        $dirty = TRUE;
+    }
+
+    if (isset($form_state['values']['dataset']) && strcmp($jail->dataset, $form_state['values']['dataset'])) {
+        $jail->dataset = $form_state['values']['dataset'];
+        $dirty = TRUE;
+    }
 
     if (isset($form_state['values']['devices'])) {
         foreach(array_filter($form_state['values']['devices']) as $device) {
@@ -276,6 +292,9 @@ function jailadmin_config_submit($form, &$form_state) {
 
         $form_state['input']['new_service'] = '';
     }
+
+    if ($dirty)
+        $jail->Persist();
 
     $form_state['rebuild']  = TRUE;
 }

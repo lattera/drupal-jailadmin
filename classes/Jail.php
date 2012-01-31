@@ -172,4 +172,15 @@ class Jail {
         if ($destroy)
             exec("/usr/local/bin/sudo /sbin/zfs destroy {$this->dataset}");
     }
+
+    public function Persist() {
+        db_update('jailadmin_jails')
+            ->fields(array(
+                'route' => $this->route,
+                'path' => $this->path,
+                'dataset' => $this->dataset,
+            ))
+            ->condition('name', $this->name)
+            ->execute();
+    }
 }
