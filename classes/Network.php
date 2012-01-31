@@ -41,6 +41,32 @@ class Network {
         return $network;
     }
 
+    public static function IsIPAvailable($ip) {
+        $result = db_query('SELECT ip FROM {jailadmin_bridges} WHERE CHAR_LENGTH(ip) > 0');
+
+        foreach ($result as $record)
+            if (!strcmp($record->ip, $ip))
+                return FALSE;
+
+        $result = db_query('SELECT ip FROM {jailadmin_epairs} WHERE CHAR_LENGTH(ip) > 0');
+
+        foreach ($result as $record)
+            if (!strcmp($record->ip, $ip))
+                return FALSE;
+
+        return TRUE;
+    }
+
+    public static function IsDeviceAvailable($device) {
+        $result = db_query('SELECT device FROM {jailadmin_bridges}');
+
+        foreach ($result as $record)
+            if (!strcmp($record->device, $device))
+                return FALSE;
+
+        return TRUE;
+    }
+
     public function IsOnline() {
         $o = exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} 2>&1 | grep -v \"does not exist\"");
         return strlen($o) > 0;
@@ -71,6 +97,9 @@ class Network {
     }
 
     public function Persist() {
+        if (Network::IsIPAvailable($this->ip) == FALSE)
+            return FALSE;
+
         db_update('jailadmin_bridges')
             ->fields(array(
                 'ip' => $this->ip,
@@ -78,15 +107,22 @@ class Network {
             ))
             ->condition('name', $this->name)
             ->execute();
+
+        return TRUE;
     }
 
     public function Create() {
+        if (Network::IsIPAvailable($this->ip) == FALSE)
+            return FALSE;
+
         db_insert('jailadmin_bridges')
             ->fields(array(
                 'name' => $this->name,
                 'device' => $this->device,
                 'ip' => $this->ip,
             ))->execute();
+
+        return TRUE;
     }
 
     public function Delete() {

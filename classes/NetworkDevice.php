@@ -79,7 +79,20 @@ class NetworkDevice {
         return $net_device;
     }
 
+    public static function IsDeviceAvailable($device) {
+        $result = db_query('SELECT device FROM {jailadmin_epairs}');
+
+        foreach ($result as $record)
+            if (!strcmp($record->device, $device))
+                return FALSE;
+
+        return TRUE;
+    }
+
     public function Create() {
+        if (NetworkDevice::IsDeviceAvailable($this->device) == FALSE)
+            return FALSE;
+
         db_insert('jailadmin_epairs')
             ->fields(array(
                 'jail' => $this->jail->name,
@@ -87,6 +100,8 @@ class NetworkDevice {
                 'bridge' => $this->bridge->name,
                 'ip' => $this->ip,
             ))->execute();
+
+        return TRUE;
     }
 
     public function Delete() {

@@ -228,6 +228,22 @@ function jailadmin_config_submit($form, &$form_state) {
     }
 
     if (isset($form_state['values']['new_network_device']) && strlen($form_state['values']['new_network_device'])) {
+        if (strlen($form_state['values']['new_network_ip'])) {
+            if (Network::IsIPAvailable($form_state['values']['new_network_ip']) == FALSE) {
+                form_set_error('new_network_ip', t('IP not available'));
+                $form_state['rebuild'] = TRUE;
+                return;
+            }
+        }
+
+        if (strlen($form_state['values']['new_network_device'])) {
+            if (NetworkDevice::IsDeviceAvailable($form_state['values']['new_network_device']) == FALSE) {
+                form_set_error('new_network_device', t('Device not available'));
+                $form_state['rebuild'] = TRUE;
+                return;
+            }
+        }
+
         $network_device = new NetworkDevice;
         $network_device->jail = $jail;
 

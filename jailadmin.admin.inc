@@ -309,8 +309,12 @@ function jailadmin_admin_settings_network_select_network_submit($form, &$form_st
 
 function jailadmin_admin_settings_network_submit($form, &$form_state) {
     if (isset($form_state['values']['physical_devices'])) {
-        foreach (array_filter($form_state['values']['physical_devices']) as $device)
-            drupal_set_message(t('gonna remove device @device', array('@device' => $device)));
+        foreach (array_filter($form_state['values']['physical_devices']) as $device) {
+            db_delete('jailadmin_bridges_physicals')
+                ->condition('bridge', $form_state['values']['network'])
+                ->condition('device', $device)
+                ->execute();
+        }
     }
 
     if (isset($form_state['values']['new_physical_device']) && strlen($form_state['values']['new_physical_device'])) {
@@ -322,6 +326,20 @@ function jailadmin_admin_settings_network_submit($form, &$form_state) {
     }
 
     if (isset($form_state['values']['new_name']) && strlen($form_state['values']['new_name'])) {
+        if (Network::IsDeviceAvailable($form_state['values']['new_device']) == FALSE) {
+            form_set_error('new_device', t('Device not available'));
+            $form_state['rebuild'] = TRUE;
+            return;
+        }
+
+        if (strlen($form_state['values']['new_ip'])) {
+            if (Network::IsIPAvailable($form_state['values']['new_ip']) == FALSE) {
+                form_set_error('new_ip', t('IP not available'));
+                $form_state['rebuild'] = TRUE;
+                return;
+            }
+        }
+
         $network = new Network;
 
         $network->name = $form_state['values']['new_name'];
@@ -338,6 +356,22 @@ function jailadmin_admin_settings_network_submit($form, &$form_state) {
 
     if (isset($form_state['values']['device']) && strlen($form_state['values']['device'])) {
         $network = Network::Load($form_state['values']['network']);
+
+        if (strcmp($network->ip, $form_state['values']['ip']) && strlen($form_state['values']['ip'])) {
+            if (Network::IsIPAvailable($form_state['values']['ip']) == FALSE) {
+                form_set_error('ip', t('IP not available'));
+                $form_state['rebuild'] = TRUE;
+                return;
+            }
+        }
+
+        if (strcmp($network->device, $form_state['values']['device'])) {
+            if (Network::IsDeviceAvailable($form_state['values']['device']) == FALSE) {
+                form_set_error('device', t('Device not available'));
+                $form_state['rebuild'] = TRUE;
+                return;
+            }
+        }
 
         $network->device = $form_state['values']['device'];
         $network->ip = $form_state['values']['ip'];
