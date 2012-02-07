@@ -13,7 +13,11 @@ function jailadmin_status($form, &$form_state) {
     $header = array('Jail Name', 'Status', 'Network Status');
     $rows = array();
     foreach ($jails as $jail) {
-        $name = l(t($jail->name), 'jailadmin/' . $jail->name . '/config');
+        if (user_access('config ' . $jail->name) || user_access('view ' . $jail->name . ' config'))
+            $name = l(t($jail->name), 'jailadmin/' . $jail->name . '/config');
+        else
+            $name = t('@name', array('@name' => $jail->name));
+
         $rows[] = array($name, $jail->IsOnlineString(), $jail->NetworkStatus());
     }
 

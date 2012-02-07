@@ -12,6 +12,20 @@ function jailadmin_config($form, &$form_state) {
     $network_devices = get_all_network_devices_for_select($jail);
     $services = get_all_services_for_select($jail);
     $mounts = get_all_mounts_for_select($jail);
+    $readonly = FALSE;
+
+    if (user_access('config ' . $jail->name) == FALSE)
+        $readonly = TRUE;
+
+    if ($readonly) {
+        if (user_access('view ' . $jail->name . ' config') == FALSE) {
+            drupal_set_message(t('Access denied'), 'error');
+            return;
+        }
+    }
+
+    if ($jail->IsOnline())
+        drupal_set_message(t('NOTE: Jail is online. All settings are read-only.'), 'status');
 
     $form['base'] = array(
         '#type' => 'fieldset',
@@ -24,7 +38,7 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'textfield',
         '#title' => t('ZFS Dataset'),
         '#size' => 60,
-        '#disabled' => $jail->IsOnline(),
+        '#disabled' => $jail->IsOnline() || $readonly,
         '#default_value' => $jail->dataset,
     );
 
@@ -32,7 +46,7 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'textfield',
         '#title' => t('Path'),
         '#size' => 60,
-        '#disabled' => $jail->IsOnline(),
+        '#disabled' => $jail->IsOnline() || $readonly,
         '#default_value' => $jail->path,
     );
 
@@ -40,7 +54,7 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'textfield',
         '#title' => t('Default Route'),
         '#size' => 60,
-        '#disabled' => $jail->IsOnline(),
+        '#disabled' => $jail->IsOnline() || $readonly,
         '#default_value' => $jail->route,
     );
 
@@ -58,6 +72,7 @@ function jailadmin_config($form, &$form_state) {
             '#multiple' => TRUE,
             '#options' => get_all_network_devices_for_select($jail),
             '#description' => t('Select one or more to delete'),
+            '#disabled' => $jail->IsOnline() || $readonly,
         );
     }
 
@@ -66,6 +81,7 @@ function jailadmin_config($form, &$form_state) {
         '#title' => t('New Device Name'),
         '#size' => 60,
         '#description' => t('e.g. epair0'),
+        '#disabled' => $jail->IsOnline() || $readonly,
     );
 
     $form['network_devices']['new_network_ip'] = array(
@@ -73,12 +89,14 @@ function jailadmin_config($form, &$form_state) {
         '#title' => t('New IP'),
         '#size' => 60,
         '#description' => t('IPv4 or IPv6 IP'),
+        '#disabled' => $jail->IsOnline() || $readonly,
     );
 
     $form['network_devices']['new_network_network'] = array(
         '#type' => 'select',
         '#title' => 'Network',
         '#options' => get_all_networks_for_select(),
+        '#disabled' => $jail->IsOnline() || $readonly,
     );
 
     $form['services'] = array(
@@ -94,6 +112,7 @@ function jailadmin_config($form, &$form_state) {
             '#multiple' => TRUE,
             '#description' => t('Select one or more to delete'),
             '#options' => $services,
+            '#disabled' => $jail->IsOnline() || $readonly,
         );
     }
 
@@ -101,6 +120,7 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'textfield',
         '#title' => t('New Service'),
         '#size' => 60,
+        '#disabled' => $jail->IsOnline() || $readonly,
     );
 
     $form['mounts'] = array(
@@ -117,6 +137,7 @@ function jailadmin_config($form, &$form_state) {
             '#description' => t('Select one or more to delete'),
             '#multiple' => TRUE,
             '#options' => $mounts,
+            '#disabled' => $jail->IsOnline() || $readonly,
         );
     }
 
@@ -124,6 +145,7 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'textfield',
         '#title' => t('New mount source'),
         '#size' => 60,
+        '#disabled' => $jail->IsOnline() || $readonly,
     );
 
     $form['mounts']['new_mount_target'] = array(
@@ -131,6 +153,7 @@ function jailadmin_config($form, &$form_state) {
         '#title' => t('New mount target'),
         '#description' => t('Without jail path prefix. (e.g. /mnt)'),
         '#size' => 60,
+        '#disabled' => $jail->IsOnline() || $readonly,
     );
 
     $form['mounts']['new_mount_driver'] = array(
@@ -138,12 +161,14 @@ function jailadmin_config($form, &$form_state) {
         '#title' => t('New mount driver'),
         '#description' => t('Driver for -t argument. (e.g. nullfs)'),
         '#size' => 60,
+        '#disabled' => $jail->IsOnline() || $readonly,
     );
 
     $form['mounts']['new_mount_options'] = array(
         '#type' => 'textfield',
         '#title' => t('Extra options'),
         '#size' => 60,
+        '#disabled' => $jail->IsOnline() || $readonly,
     );
 
     $form['jail_actions'] = array(
@@ -155,39 +180,41 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'submit',
         '#value' => t('Start Jail'),
         '#submit' => array('jail_actions_start'),
-        '#disabled' => $jail->IsOnline(),
+        '#disabled' => $jail->IsOnline() || $readonly,
     );
 
     $form['jail_actions']['stop'] = array(
         '#type' => 'submit',
         '#value' => t('Stop Jail'),
         '#submit' => array('jail_actions_stop'),
-        '#disabled' => !$jail->IsOnline(),
+        '#disabled' => !$jail->IsOnline() || $readonly,
     );
 
     $form['jail_actions']['snapshot'] = array(
         '#type' => 'submit',
         '#value' => t('Snapshot'),
         '#submit' => array('jail_actions_snapshot'),
+        '#disabled' => $readonly,
     );
 
     $form['jail_actions']['upgrade'] = array(
         '#type' => 'submit',
         '#value' => t('Upgrade World'),
         '#submit' => array('jail_actions_upgrade'),
-        '#disabled' => $jail->IsOnline(),
+        '#disabled' => $jail->IsOnline() || $readonly,
     );
 
     $form['jail_actions']['setup_services'] = array(
         '#type' => 'submit',
         '#value' => t('Setup Services'),
         '#submit' => array('jail_actions_setup_services'),
-        '#disabled' => $jail->IsOnline(),
+        '#disabled' => $jail->IsOnline() || $readonly,
     );
 
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Save Configuration'),
+        '#disabled' => $jail->IsOnline() || $readonly,
     );
 
     return $form;
@@ -196,6 +223,12 @@ function jailadmin_config($form, &$form_state) {
 function jailadmin_config_submit($form, &$form_state) {
     $jail = Jail::Load($form_state['build_info']['args'][0]);
     $dirty = FALSE;
+
+    if (user_access('config ' . $jail->name) == FALSE) {
+        drupal_set_message(t('Access denied'), 'error');
+        $form_state['rebuild'] = TRUE;
+        return;
+    }
 
     if (isset($form_state['values']['route']) && strcmp($jail->route, $form_state['values']['route'])) {
         $jail->route = $form_state['values']['route'];
