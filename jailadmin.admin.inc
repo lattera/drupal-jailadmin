@@ -197,6 +197,8 @@ function jailadmin_admin_settings_network($form, &$form_state) {
             if ($network->IsOnline())
                 $disabled = TRUE;
 
+            $offline_disabled = !$network->CanBeModified();
+
             $form['jailadmin_networks']['device'] = array(
                 '#type' => 'textfield',
                 '#title' => t('Device'),
@@ -241,6 +243,15 @@ function jailadmin_admin_settings_network($form, &$form_state) {
                 );
             }
 
+            if ($offline_disabled) {
+                $form['jailadmin_networks']['offline_disabled_notice'] = array(
+                    '#type' => 'markup',
+                    '#prefix' => '<div>',
+                    '#markup' => t('NOTE: Network has jails online. Cannot bring network offline.'),
+                    '#suffix' => '</div>',
+                );
+            }
+
             $form['jailadmin_networks']['bring_online'] = array(
                 '#type' => 'submit',
                 '#value' => t('Bring Online'),
@@ -252,15 +263,21 @@ function jailadmin_admin_settings_network($form, &$form_state) {
                 '#type' => 'submit',
                 '#value' => t('Bring Offline'),
                 '#submit' => array('jailadmin_admin_settings_network_bring_offline'),
-                '#disabled' => !$disabled,
+                '#disabled' => $offline_disabled,
             );
+
+            $delete_disabled = $offline_disabled;
+
+            if (count($network->AssignedJails()))
+                $delete_disabled = TRUE;
 
             $form['jailadmin_networks']['delete'] = array(
                 '#type' => 'submit',
                 '#value' => t('Delete'),
                 '#submit' => array('jailadmin_admin_settings_network_delete'),
-                '#disabled' => $disabled,
+                '#disabled' => $delete_disabled,
             );
+
         }
     }
 

@@ -22,6 +22,9 @@ function jailadmin_permission() {
         'view jails' => array(
             'title' => t('View jails'),
         ),
+        'administer networks' => array(
+            'title' => t('Administer networks'),
+        ),
     );
 
     foreach ($jails as $jail) {
@@ -45,7 +48,8 @@ function jailadmin_menu() {
         'position' => 'right',
         'weight' => -5,
         'page callback' => 'system_admin_menu_block_page',
-        'access arguments' => array('administer jails'),
+        'access callback' => 'jail_settings_access',
+        'access arguments' => array(array('administer jails', 'administer networks')),
         'file' => 'system.admin.inc',
         'file path' => drupal_get_path('module', 'system'),
     );
@@ -55,6 +59,7 @@ function jailadmin_menu() {
         'description' => 'Settings for Wayfair Jail Admin',
         'page callback' => 'drupal_get_form',
         'page arguments' => array('jailadmin_admin_settings'),
+        'access callback' => 'user_access',
         'access arguments' => array('administer jails'),
         'type' => MENU_NORMAL_ITEM,
         'file' => 'jailadmin.admin.inc',
@@ -65,7 +70,8 @@ function jailadmin_menu() {
         'description' => 'Networks for Jails',
         'page callback' => 'drupal_get_form',
         'page arguments' => array('jailadmin_admin_settings_network'),
-        'access arguments' => array('administer jails'),
+        'access callback' => 'user_access',
+        'access arguments' => array('administer networks'),
         'type' => MENU_NORMAL_ITEM,
         'file' => 'jailadmin.admin.inc',
     );
@@ -97,6 +103,14 @@ function jailadmin_menu() {
 function jail_config_access($jail) {
     if (user_access('view ' . $jail . ' config') || user_access('config ' . $jail))
         return TRUE;
+
+    return FALSE;
+}
+
+function jail_settings_access($perms=array()) {
+    foreach($perms as $perm)
+        if (user_access($perm))
+            return TRUE;
 
     return FALSE;
 }

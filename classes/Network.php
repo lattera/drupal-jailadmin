@@ -5,9 +5,11 @@ class Network {
     public $device;
     public $ip;
     public $physicals;
+    private $_jails;
 
     public function __construct() {
         $this->physicals = array();
+        $this->_jails = NULL;
     }
 
     public static function Load($name) {
@@ -130,5 +132,29 @@ class Network {
         db_delete('jailadmin_bridges')
             ->condition('name', $this->name)
             ->execute();
+    }
+
+    public function AssignedJails() {
+        if ($this->_jails != NULL)
+            return $this->_jails;
+
+        $this->_jails = array();
+
+        $jails = Jail::LoadAll();
+        foreach ($jails as $jail)
+            foreach ($jail->network as $network)
+                if (!strcmp($network->bridge->name, $this->name))
+                    $this->_jails[] = $jail;
+
+        return $this->_jails;
+    }
+
+    public function CanBeModified() {
+        $jails = $this->AssignedJails();
+        foreach ($jails as $jail)
+            if ($jail->IsOnline())
+                return FALSE;
+
+        return TRUE;
     }
 }
