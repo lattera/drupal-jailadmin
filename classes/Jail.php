@@ -165,6 +165,15 @@ class Jail {
     }
 
     public function Delete($destroy) {
+        foreach ($this->network as $n)
+            $n->Delete();
+
+        foreach ($this->services as $s)
+            $s->Delete();
+
+        foreach ($this->mounts as $m)
+            $m->Delete();
+
         db_delete('jailadmin_jails')
             ->condition('name', $this->name)
             ->execute();
