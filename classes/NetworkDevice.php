@@ -51,8 +51,8 @@ class NetworkDevice {
             if ($this->BringHostOnline() == FALSE)
                 return FALSE;
 
-        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}b vnet {$this->jail->name}");
-        exec("/usr/local/bin/sudo /usr/sbin/jexec {$this->jail->name} ifconfig {$this->device}b {$this->ip}");
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}b vnet \"{$this->jail->name}\"");
+        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b {$this->ip}");
 
         return TRUE;
     }
