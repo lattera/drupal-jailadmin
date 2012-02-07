@@ -77,6 +77,7 @@ class Network {
             return TRUE;
 
         exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} create 2>&1");
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} up 2>&1");
 
         if (strlen($this->ip))
             exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} {$this->ip}");
