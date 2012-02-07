@@ -96,7 +96,7 @@ class Jail {
         }
 
         foreach ($this->services as $service)
-            exec("/usr/local/bin/sudo /usr/sbin/jexec {$this->name} {$service->path} start");
+            exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" {$service->path} start");
 
         return TRUE;
     }
@@ -105,7 +105,7 @@ class Jail {
         if ($this->IsOnline() == FALSE)
             return TRUE;
 
-        exec("/usr/local/bin/sudo /usr/sbin/jail -r {$this->name}");
+        exec("/usr/local/bin/sudo /usr/sbin/jail -r \"{$this->name}\"");
         exec("/usr/local/bin/sudo /sbin/umount {$this->path}/dev");
 
         foreach ($this->mounts as $mount) {
@@ -137,7 +137,7 @@ class Jail {
         if ($this->Snapshot() == FALSE)
             return FALSE;
 
-        exec("cd /usr/src; /usr/local/bin/sudo make installworld DESTDIR={$this->path} > /tmp/upgrade-{$this->name}-{$date}.log 2>&1");
+        exec("cd /usr/src; /usr/local/bin/sudo make installworld DESTDIR={$this->path} > \"/tmp/upgrade-{$this->name}-{$date}.log\" 2>&1");
 
         return TRUE;
     }
