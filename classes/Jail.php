@@ -37,12 +37,13 @@ class Jail {
 
         $jail = new Jail;
         $jail->name = $record['name'];
-        $jail->path = $record['path'];
         $jail->dataset = $record['dataset'];
         $jail->route = $record['route'];
         $jail->network = NetworkDevice::Load($jail);
         $jail->services = Service::Load($jail);
         $jail->mounts = Mount::Load($jail);
+
+        $jail->path = exec("/sbin/zfs get -H -o value mountpoint {$jail->dataset}");
 
         return $jail;
     }
@@ -158,7 +159,6 @@ class Jail {
         db_insert('jailadmin_jails')
             ->fields(array(
                 'name' => $this->name,
-                'path' => $this->path,
                 'dataset' => $this->dataset,
                 'route' => $this->route,
             ))->execute();
@@ -186,7 +186,6 @@ class Jail {
         db_update('jailadmin_jails')
             ->fields(array(
                 'route' => $this->route,
-                'path' => $this->path,
                 'dataset' => $this->dataset,
             ))
             ->condition('name', $this->name)

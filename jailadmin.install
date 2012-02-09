@@ -9,11 +9,6 @@ function jailadmin_schema() {
                 'length' => 100,
                 'not null' => TRUE
             ),
-            'path' => array(
-                'type' => 'varchar',
-                'length' => 500,
-                'not null' => TRUE,
-            ),
             'dataset' => array(
                 'type' => 'varchar',
                 'length' => 500,
@@ -25,6 +20,22 @@ function jailadmin_schema() {
             ),
         ),
         'primary key' => array('name'),
+    );
+
+    $schema['jailadmin_host_cmds'] = array(
+        'description' => 'Commands to run in the host after the jail is online',
+        'fields' => array(
+            'jail' => array(
+                'type' => 'varchar',
+                'length' => 100,
+                'not null' => TRUE,
+            ),
+            'command' => array(
+                'type' => 'varchar',
+                'length' => 500,
+                'not null' => TRUE,
+            ),
+        ),
     );
 
     $schema['jailadmin_bridges'] = array(

@@ -43,11 +43,9 @@ function jailadmin_config($form, &$form_state) {
     );
 
     $form['base']['path'] = array(
-        '#type' => 'textfield',
+        '#type' => 'item',
         '#title' => t('Path'),
-        '#size' => 60,
-        '#disabled' => $jail->IsOnline() || $readonly,
-        '#default_value' => $jail->path,
+        '#markup' => $jail->path,
     );
 
     $form['base']['route'] = array(

@@ -76,12 +76,6 @@ function jailadmin_admin_settings($form, &$form_state) {
         '#size' => 30,
     );
 
-    $form['new_jail']['new_path'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Path'),
-        '#size' => 30,
-    );
-
     $form['new_jail']['new_dataset'] = array(
         '#type' => 'textfield',
         '#title' => t('Dataset'),
@@ -137,7 +131,6 @@ function jailadmin_admin_settings_submit($form, &$form_state) {
     if (isset($form_state['values']['new_name']) && strlen($form_state['values']['new_name'])) {
         $template = '';
         $name = $form_state['values']['new_name'];
-        $path = $form_state['values']['new_path'];
         $dataset = $form_state['values']['new_dataset'];
         $route = $form_state['values']['new_route'];
 
@@ -146,14 +139,12 @@ function jailadmin_admin_settings_submit($form, &$form_state) {
 
         $j = new Jail;
         $j->name = $name;
-        $j->path = $path;
         $j->dataset = $dataset;
         $j->route = $route;
 
         $j->Create($template);
 
         $form_state['input']['new_name'] = '';
-        $form_state['input']['new_path'] = '';
         $form_state['input']['new_dataset'] = '';
         $form_state['input']['new_route'] = '';
         $form_state['input']['new_template'] = '';
