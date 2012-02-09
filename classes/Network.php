@@ -157,4 +157,12 @@ class Network {
 
         return TRUE;
     }
+
+    public static function SanitizedIP($ip) {
+        $result = strstr($ip, '/', TRUE);
+        if ($result === FALSE)
+            return $ip;
+
+        return $result;
+    }
 }

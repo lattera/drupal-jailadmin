@@ -145,7 +145,8 @@ class Jail {
 
     public function SetupServices() {
         if (count($this->network)) {
-            exec("/usr/local/bin/sudo /bin/sh -c '/bin/echo \"ListenAddress {$this->network[0]->ip}\" >> {$this->path}/etc/ssh/sshd_config'");
+            $ip = Network::SanitizedIP($this->network[0]->ip);
+            exec("/usr/local/bin/sudo /bin/sh -c '/bin/echo \"ListenAddress {$ip}\" >> {$this->path}/etc/ssh/sshd_config'");
             exec("/usr/local/bin/sudo /bin/sh -c '/bin/echo sshd_enable=\\\"YES\\\" >> {$this->path}/etc/rc.conf'");
         }
     }
