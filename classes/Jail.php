@@ -48,7 +48,7 @@ class Jail {
     }
 
     public function IsOnline() {
-        $o = exec("mount | grep {$this->name}/dev");
+        $o = exec("/usr/sbin/jls -n -j \"{$this->name}\" jid 2>&1 | grep -v \"{$this->name}\"");
         return strlen($o) > 0;
     }
 
