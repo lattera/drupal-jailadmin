@@ -318,7 +318,7 @@ function jailadmin_admin_settings_network_select_network_submit($form, &$form_st
 function jailadmin_admin_settings_network_submit($form, &$form_state) {
     if (isset($form_state['values']['physical_devices'])) {
         foreach (array_filter($form_state['values']['physical_devices']) as $device) {
-            db_delete('jailadmin_bridges_physicals')
+            db_delete('jailadmin_bridge_physicals')
                 ->condition('bridge', $form_state['values']['network'])
                 ->condition('device', $device)
                 ->execute();
