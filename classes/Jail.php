@@ -8,10 +8,12 @@ class Jail {
     public $network;
     public $services;
     public $mounts;
+    private $_snapshots;
 
     function __construct() {
         $this->network = array();
         $this->services = array();
+        $this->_snapshots = array();
     }
 
     public static function LoadAll() {
@@ -46,6 +48,31 @@ class Jail {
         $jail->path = exec("/sbin/zfs get -H -o value mountpoint {$jail->dataset}");
 
         return $jail;
+    }
+
+    private function load_snapshots() {
+        exec("/sbin/zfs list -rH -oname -t snapshot {$this->dataset}", $this->_snapshots);
+    }
+
+    public function GetSnapshots() {
+        if (count($this->_snapshots) > 0)
+            return $this->_snapshots;
+
+        $this->load_snapshots();
+
+        return $this->_snapshots;
+    }
+
+    public function RevertSnapshot($snapshot) {
+        exec("/usr/local/bin/sudo /sbin/zfs rollback -rf \"{$snapshot}\"");
+
+        return TRUE;
+    }
+
+    public function DeleteSnapshot($snapshot) {
+        exec("/usr/local/bin/sudo /sbin/zfs destroy -rf \"{$snapshot}\"");
+
+        return true;
     }
 
     public function IsOnline() {

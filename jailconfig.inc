@@ -169,6 +169,37 @@ function jailadmin_config($form, &$form_state) {
         '#disabled' => $jail->IsOnline() || $readonly,
     );
 
+    if (count($jail->GetSnapshots())) {
+        $form['snapshots'] = array(
+            '#type' => 'fieldset',
+            '#title' => t('Snapshots'),
+            '#collapsible' => TRUE,
+            '#collapsed' => TRUE
+        );
+
+        $form['snapshots']['existing_snapshots'] = array(
+            '#type' => 'select',
+            '#multiple' => TRUE,
+            '#title' => t('Existing snapshots'),
+            '#options' => drupal_map_assoc($jail->GetSnapshots()),
+            '#disabled' => $readonly,
+        );
+
+        $form['snapshots']['delete_snapshot'] = array(
+            '#type' => 'submit',
+            '#value' => t('Delete Snapshots'),
+            '#submit' => array('snapshot_delete'),
+            '#disabled' => $readonly,
+        );
+
+        $form['snapshots']['revert_snapshot'] = array(
+            '#type' => 'submit',
+            '#value' => t('Revert to Snapshot'),
+            '#submit' => array('snapshot_revert'),
+            '#disabled' => $jail->IsOnline() || $readonly,
+        );
+    }
+
     $form['jail_actions'] = array(
         '#type' => 'fieldset',
         '#title' => t('Jail Actions'),
@@ -328,6 +359,40 @@ function jailadmin_config_submit($form, &$form_state) {
         $jail->Persist();
 
     $form_state['rebuild']  = TRUE;
+}
+
+function snapshot_delete($form, &$form_state) {
+    $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if (isset($form_state['values']['existing_snapshots'])) {
+        foreach(array_filter($form_state['values']['existing_snapshots']) as $snapshot) {
+            $jail->DeleteSnapshot($snapshot);
+            drupal_set_message(t('Snapshot @snapshot deleted', array('@snapshot' => $snapshot)));
+        }
+    }
+
+    $form_state['rebuild'] = TRUE;
+}
+
+function snapshot_revert($form, &$form_state) {
+    $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if (isset($form_state['values']['existing_snapshots'])) {
+        $snapshots = array_filter($form_state['values']['existing_snapshots']);
+
+        if (count($snapshots) == 0 || count($snapshots) > 1) {
+            form_set_error('existing_snapshots', t('You must select only a single snapshot to revert to'));
+            $form_state['rebuild'] = TRUE;
+            return;
+        }
+
+        foreach ($snapshots as $snapshot) {
+            $jail->RevertSnapshot($snapshot);
+            drupal_set_message(t('@jail reverted to snapshot @snapshot', array('@jail' => $jail->name, '@snapshot' => $snapshot)));
+        }
+    }
+
+    $form_state['rebuild'] = TRUE;
 }
 
 function jail_actions_start($form, &$form_state) {
