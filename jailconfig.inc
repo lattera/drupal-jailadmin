@@ -198,6 +198,13 @@ function jailadmin_config($form, &$form_state) {
             '#submit' => array('snapshot_revert'),
             '#disabled' => $jail->IsOnline() || $readonly,
         );
+
+        $form['snapshots']['create_template'] = array(
+            '#type' => 'submit',
+            '#value' => t('Create Template From Snapshot'),
+            '#submit' => array('create_template'),
+            '#disabled' => $readonly,
+        );
     }
 
     $form['jail_actions'] = array(
@@ -359,6 +366,19 @@ function jailadmin_config_submit($form, &$form_state) {
         $jail->Persist();
 
     $form_state['rebuild']  = TRUE;
+}
+
+function create_template($form, &$form_state) {
+    $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if (isset($form_state['values']['existing_snapshots'])) {
+        foreach (array_filter($form_state['values']['existing_snapshots']) as $snapshot) {
+            $jail->CreateTemplateFromSnapshot($snapshot);
+            drupal_set_message(t('Created template named "@snapshot"', array('@snapshot' => $snapshot)));
+        }
+    }
+
+    $form_state['rebuild'] = TRUE;
 }
 
 function snapshot_delete($form, &$form_state) {

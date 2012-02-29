@@ -69,6 +69,20 @@ class Jail {
         return TRUE;
     }
 
+    public function CreateTemplateFromSnapshot($snapshot, $name='') {
+        if ($name == '')
+            $name = $snapshot;
+
+        db_insert('jailadmin_templates')
+            ->fields(array(
+                'name' => $name,
+                'snapshot' => $snapshot,
+            ))
+            ->execute();
+
+        return TRUE;
+    }
+
     public function DeleteSnapshot($snapshot) {
         exec("/usr/local/bin/sudo /sbin/zfs destroy -rf \"{$snapshot}\"");
 
