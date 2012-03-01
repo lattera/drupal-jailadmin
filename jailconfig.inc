@@ -78,7 +78,7 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'textfield',
         '#title' => t('New Device Name'),
         '#size' => 60,
-        '#description' => t('e.g. epair0'),
+        '#description' => t('e.g. epair@device', array('@device' => NetworkDevice::NextAvailableDevice())),
         '#disabled' => $jail->IsOnline() || $readonly,
     );
 

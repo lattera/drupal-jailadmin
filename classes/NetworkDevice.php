@@ -89,6 +89,23 @@ class NetworkDevice {
         return TRUE;
     }
 
+    public static function NextAvailableDevice() {
+        $result = db_query('SELECT device FROM {jailadmin_epairs}');
+
+        $id = 0;
+        foreach ($result as $record) {
+            $i = substr($record->device, strlen("epair"));
+            if (intval($i) > $id)
+                $id = intval($i);
+        }
+
+        for (++$id; ; $id++)
+            if (NetworkDevice::IsDeviceAvailable("epair{$id}"))
+                break;
+
+        return $id;
+    }
+
     public function Create() {
         if (NetworkDevice::IsDeviceAvailable($this->device) == FALSE)
             return FALSE;
