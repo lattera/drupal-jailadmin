@@ -4,6 +4,7 @@ class NetworkDevice {
     public $device;
     public $ip;
     public $bridge;
+    public $is_span;
     public $jail;
 
     public static function Load($jail) {
@@ -37,7 +38,12 @@ class NetworkDevice {
             return FALSE;
 
         exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} create");
-        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->bridge->device} addm {$this->device}a");
+        if ($this->is_span) {
+            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->bridge->device} span {$this->device}a");
+        } else {
+            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->bridge->device} addm {$this->device}a");
+        }
+
         exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}a up");
 
         return TRUE;
@@ -52,7 +58,10 @@ class NetworkDevice {
                 return FALSE;
 
         exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}b vnet \"{$this->jail->name}\"");
-        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b {$this->ip}");
+        if (strlen($this->ip))
+            exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b {$this->ip}");
+
+        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b up");
 
         return TRUE;
     }
@@ -73,6 +82,7 @@ class NetworkDevice {
         $net_device = new NetworkDevice;
         $net_device->device = $record['device'];
         $net_device->ip = $record['ip'];
+        $net_device->is_span = ($record['is_span'] == 1) ? TRUE : FALSE;
         $net_device->bridge = Network::Load($record['bridge']);
         $net_device->jail = $jail;
 
@@ -116,6 +126,7 @@ class NetworkDevice {
                 'device' => $this->device,
                 'bridge' => $this->bridge->name,
                 'ip' => $this->ip,
+                'is_span' => ($this->is_span) ? 1 : 0,
             ))->execute();
 
         return TRUE;

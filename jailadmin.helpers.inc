@@ -28,6 +28,11 @@ function get_all_network_devices_for_select($jail) {
 
     foreach ($jail->network as $network) {
         $ip = (strlen($network->ip)) ? $network->ip : "NO IP";
+        $span = "";
+        if ($network->is_span)
+            $span = " (SPAN)";
+
+        $ip .= $span;
 
         $networks[$network->device] = t($network->device . ' (' . $ip . ')');
     }

@@ -123,6 +123,11 @@ function jailadmin_schema() {
                 'length' => 45,
                 'not null' => TRUE,
             ),
+            'is_span' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0,
+            ),
         ),
         'primary key' => array('device'),
         'indexes' => array(
@@ -183,4 +188,14 @@ function jailadmin_schema() {
     );
 
     return $schema;
+}
+
+function jailadmin_update_7001() {
+    $spec = array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+    );
+
+    db_add_field('jailadmin_epairs', 'is_span', $spec);
 }

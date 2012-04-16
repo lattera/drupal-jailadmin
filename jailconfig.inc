@@ -97,6 +97,13 @@ function jailadmin_config($form, &$form_state) {
         '#disabled' => $jail->IsOnline() || $readonly,
     );
 
+    $form['network_devices']['new_network_span'] = array(
+        '#type' => 'checkbox',
+        '#title' => 'Span Device',
+        '#description' => 'Device is a span device?',
+        '#default_value' => FALSE,
+    );
+
     $form['services'] = array(
         '#type' => 'fieldset',
         '#title' => t('Services'),
@@ -335,6 +342,7 @@ function jailadmin_config_submit($form, &$form_state) {
         $network_device->bridge = Network::Load($form_state['values']['new_network_network']);
         $network_device->device = $form_state['values']['new_network_device'];
         $network_device->ip = $form_state['values']['new_network_ip'];
+        $network_device->is_span = $form_state['values']['new_network_span'];
 
         $network_device->Create();
 
