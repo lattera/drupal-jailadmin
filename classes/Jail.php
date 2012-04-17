@@ -104,8 +104,18 @@ class Jail {
     public function NetworkStatus() {
         $status = "";
 
-        foreach ($this->network as $n)
-            $status .= (strlen($status) ? ", " : "") . $n->ip . ($n->IsOnline() ? " (online)" : " (offline)");
+        foreach ($this->network as $n) {
+            $ip = "";
+            if (strlen($n->ip))
+                $ip = $n->ip;
+            else
+                $ip = "(NO IP)";
+
+            if ($n->is_span)
+                $ip .= " (SPAN)";
+
+            $status .= (strlen($status) ? ", " : "") . $ip . ($n->IsOnline() ? " (online)" : " (offline)");
+        }
 
         return $status;
     }
