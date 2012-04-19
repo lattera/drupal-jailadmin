@@ -199,3 +199,23 @@ function jailadmin_update_7001() {
 
     db_add_field('jailadmin_epairs', 'is_span', $spec);
 }
+
+function jailadmin_update_7002() {
+    $schema['jailadmin_host_cmds'] = array(
+        'description' => 'Commands to run in the host after the jail is online',
+        'fields' => array(
+            'jail' => array(
+                'type' => 'varchar',
+                'length' => 100,
+                'not null' => TRUE,
+            ),
+            'command' => array(
+                'type' => 'varchar',
+                'length' => 500,
+                'not null' => TRUE,
+            ),
+        ),
+    );
+
+    db_create_table('jailadmin_host_cmds', $schema['jailadmin_host_cmds']);
+}
