@@ -3,7 +3,7 @@
 class Network {
     public $name;
     public $device;
-    public $ip;
+    public $ips;
     public $physicals;
     private $_jails;
 
@@ -33,24 +33,32 @@ class Network {
 
         $network->name = $record['name'];
         $network->device = $record['device'];
-        $network->ip = $record['ip'];
 
         /* Load physical devices to add to the bridge */
         $result = db_query('SELECT device FROM {jailadmin_bridge_physicals} WHERE bridge = :bridge', array(':bridge' => $network->name));
         foreach ($result as $physical)
             $network->physicals[] = $physical->device;
 
+        $result = db_select('jailadmin_bridge_aliases', 'jba')
+            ->fields('jba', array('ip'))
+            ->condition('device', $network->device)
+            ->execute();
+
+        $network->ips = array();
+        foreach ($result as $ip)
+            $network->ips[] = $ip->ip;
+
         return $network;
     }
 
     public static function IsIPAvailable($ip) {
-        $result = db_query('SELECT ip FROM {jailadmin_bridges} WHERE CHAR_LENGTH(ip) > 0');
+        $result = db_query('SELECT ip FROM {jailadmin_bridge_aliases} WHERE CHAR_LENGTH(ip) > 0');
 
         foreach ($result as $record)
             if (!strcmp($record->ip, $ip))
                 return FALSE;
 
-        $result = db_query('SELECT ip FROM {jailadmin_epairs} WHERE CHAR_LENGTH(ip) > 0');
+        $result = db_query('SELECT ip FROM {jailadmin_epair_aliases} WHERE CHAR_LENGTH(ip) > 0');
 
         foreach ($result as $record)
             if (!strcmp($record->ip, $ip))
@@ -81,8 +89,10 @@ class Network {
         exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} create 2>&1");
         exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} up 2>&1");
 
-        if (strlen($this->ip))
-            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} {$this->ip}");
+        foreach ($this->ips as $ip) {
+            $inet = (strstr($ip, ':') === FALSE) ? 'inet' : 'inet6';
+            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} {$inet} {$ip} alias");
+        }
 
         foreach ($this->physicals as $physical)
             exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} addm {$physical}");
@@ -100,12 +110,8 @@ class Network {
     }
 
     public function Persist() {
-        if (Network::IsIPAvailable($this->ip) == FALSE)
-            return FALSE;
-
         db_update('jailadmin_bridges')
             ->fields(array(
-                'ip' => $this->ip,
                 'device' => $this->device,
             ))
             ->condition('name', $this->name)
@@ -132,6 +138,20 @@ class Network {
         db_delete('jailadmin_bridges')
             ->condition('name', $this->name)
             ->execute();
+
+        db_delete('jailadmin_bridge_aliases')
+            ->condition('device', $this->device)
+            ->execute();
+    }
+
+    public function AddIP($ip) {
+        db_insert('jailadmin_bridge_aliases')
+            ->fields(array(
+                'device' => $this->device,
+                'ip' => $ip
+            ))->execute();
+
+        $this->ips[] = $ip;
     }
 
     public function AssignedJails() {

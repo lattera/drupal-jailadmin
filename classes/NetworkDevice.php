@@ -2,7 +2,7 @@
 
 class NetworkDevice {
     public $device;
-    public $ip;
+    public $ips;
     public $bridge;
     public $is_span;
     public $jail;
@@ -58,8 +58,10 @@ class NetworkDevice {
                 return FALSE;
 
         exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}b vnet \"{$this->jail->name}\"");
-        if (strlen($this->ip))
-            exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b {$this->ip}");
+        foreach ($this->ips as $ip) {
+            $inet = (strstr($ip, ':') === FALSE) ? 'inet' : 'inet6';
+            exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b {$inet} \"{$ip}\" alias");
+        }
 
         exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b up");
 
@@ -81,10 +83,18 @@ class NetworkDevice {
 
         $net_device = new NetworkDevice;
         $net_device->device = $record['device'];
-        $net_device->ip = $record['ip'];
         $net_device->is_span = ($record['is_span'] == 1) ? TRUE : FALSE;
         $net_device->bridge = Network::Load($record['bridge']);
         $net_device->jail = $jail;
+
+        $net_device->ips = array();
+        $ip_records = db_select('jailadmin_epair_aliases', 'jea')
+            ->fields('jea', array('ip'))
+            ->condition('device', $net_device->device)
+            ->execute();
+
+        foreach ($ip_records as $ip_record)
+            $net_device->ips[] = $ip_record->ip;
 
         return $net_device;
     }
@@ -125,7 +135,6 @@ class NetworkDevice {
                 'jail' => $this->jail->name,
                 'device' => $this->device,
                 'bridge' => $this->bridge->name,
-                'ip' => $this->ip,
                 'is_span' => ($this->is_span) ? 1 : 0,
             ))->execute();
 
@@ -136,6 +145,10 @@ class NetworkDevice {
         db_delete('jailadmin_epairs')
             ->condition('device', $this->device)
             ->condition('jail', $this->jail->name)
+            ->execute();
+
+        db_delete('jailadmin_epair_aliases')
+            ->condition('device', $this->device)
             ->execute();
     }
 }

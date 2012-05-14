@@ -48,14 +48,6 @@ function jailadmin_config($form, &$form_state) {
         '#markup' => $jail->path,
     );
 
-    $form['base']['route'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Default Route'),
-        '#size' => 60,
-        '#disabled' => $jail->IsOnline() || $readonly,
-        '#default_value' => $jail->route,
-    );
-
     $form['network_devices'] = array(
         '#type' => 'fieldset',
         '#title' => t('Network Devices'),
@@ -79,14 +71,6 @@ function jailadmin_config($form, &$form_state) {
         '#title' => t('New Device Name'),
         '#size' => 60,
         '#description' => t('e.g. epair@device', array('@device' => NetworkDevice::NextAvailableDevice())),
-        '#disabled' => $jail->IsOnline() || $readonly,
-    );
-
-    $form['network_devices']['new_network_ip'] = array(
-        '#type' => 'textfield',
-        '#title' => t('New IP'),
-        '#size' => 60,
-        '#description' => t('IPv4 or IPv6 IP'),
         '#disabled' => $jail->IsOnline() || $readonly,
     );
 
@@ -320,14 +304,6 @@ function jailadmin_config_submit($form, &$form_state) {
     }
 
     if (isset($form_state['values']['new_network_device']) && strlen($form_state['values']['new_network_device'])) {
-        if (strlen($form_state['values']['new_network_ip'])) {
-            if (Network::IsIPAvailable($form_state['values']['new_network_ip']) == FALSE) {
-                form_set_error('new_network_ip', t('IP not available'));
-                $form_state['rebuild'] = TRUE;
-                return;
-            }
-        }
-
         if (strlen($form_state['values']['new_network_device'])) {
             if (NetworkDevice::IsDeviceAvailable($form_state['values']['new_network_device']) == FALSE) {
                 form_set_error('new_network_device', t('Device not available'));
@@ -341,13 +317,11 @@ function jailadmin_config_submit($form, &$form_state) {
 
         $network_device->bridge = Network::Load($form_state['values']['new_network_network']);
         $network_device->device = $form_state['values']['new_network_device'];
-        $network_device->ip = $form_state['values']['new_network_ip'];
         $network_device->is_span = $form_state['values']['new_network_span'];
 
         $network_device->Create();
 
         $form_state['input']['new_network_device'] = '';
-        $form_state['input']['new_network_ip'] = '';
     }
 
     if (isset($form_state['values']['services'])) {

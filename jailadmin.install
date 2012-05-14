@@ -136,6 +136,59 @@ function jailadmin_schema() {
         ),
     );
 
+    $schema['jailadmin_epair_aliases'] = array(
+        'description' => 'IP aliases for an epair device',
+        'fields' => array(
+            'device' => array(
+                'type' => 'varchar',
+                'length' => 20,
+                'not null' => TRUE,
+            ),
+            'ip' => array(
+                'type' => 'varchar',
+                'length' => 45,
+                'not null' => TRUE,
+            ),
+        ),
+    );
+
+    $schema['jailadmin_bridge_aliases'] = array(
+        'description' => 'IP aliases for an epair device',
+        'fields' => array(
+            'device' => array(
+                'type' => 'varchar',
+                'length' => 20,
+                'not null' => TRUE,
+            ),
+            'ip' => array(
+                'type' => 'varchar',
+                'length' => 45,
+                'not null' => TRUE,
+            ),
+        ),
+    );
+
+    $schema['jailadmin_routes'] = array(
+        'description' => 'IPv4 and IPv6 routes to add upon jail bootup',
+        'fields' => array(
+            'jail' => array(
+                'type' => 'varchar',
+                'length' => '100',
+                'not null' => TRUE,
+            ),
+            'source' => array(
+                'type' => 'varchar',
+                'length' => 45,
+                'not null' => TRUE,
+            ),
+            'destination' => array(
+                'type' => 'varchar',
+                'length' => 45,
+                'not null' => TRUE,
+            ),
+        ),
+    );
+
     $schema['jailadmin_templates'] = array(
         'description' => 'ZFS Templates',
         'fields' => array(
@@ -218,4 +271,51 @@ function jailadmin_update_7002() {
     );
 
     db_create_table('jailadmin_host_cmds', $schema['jailadmin_host_cmds']);
+}
+
+/**
+ * Add support for IP aliases and custom routes
+ */
+function jailadmin_update_7003() {
+    db_create_table('jailadmin_routes', drupal_get_schema_unprocessed('jailadmin', 'jailadmin_routes'));
+    db_create_table('jailadmin_epair_aliases', drupal_get_schema_unprocessed('jailadmin', 'jailadmin_epair_aliases'));
+    db_create_table('jailadmin_bridge_aliases', drupal_get_schema_unprocessed('jailadmin', 'jailadmin_bridge_aliases'));
+
+    /* Port existing records over to new tables */
+    $result = db_select('jailadmin_epairs', 'je')
+        ->fields('je', array('ip', 'device'))
+        ->execute();
+
+    foreach ($result as $record) {
+        db_insert('jailadmin_epair_aliases')
+            ->fields(array(
+                'device' => $record->device,
+                'ip' => $record->ip,
+            ))->execute();
+    }
+
+    $result = db_select('jailadmin_bridges', 'je')
+        ->fields('je', array('ip', 'device'))
+        ->execute();
+
+    foreach ($result as $record) {
+        db_insert('jailadmin_bridge_aliases')
+            ->fields(array(
+                'device' => $record->device,
+                'ip' => $record->ip,
+            ))->execute();
+    }
+
+    $result = db_select('jailadmin_jails', 'j')
+        ->fields('j', array('name', 'route'))
+        ->execute();
+
+    foreach ($result as $record) {
+        db_insert('jailadmin_routes')
+            ->fields(array(
+                'jail' => $record->name,
+                'source' => 'default',
+                'destination' => $record->route,
+            ))->execute();
+    }
 }

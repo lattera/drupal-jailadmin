@@ -82,12 +82,6 @@ function jailadmin_admin_settings($form, &$form_state) {
         '#size' => 30,
     );
 
-    $form['new_jail']['new_route'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Default Route'),
-        '#size' => 30,
-    );
-
     if (count($templates)) {
         $form['new_jail']['new_template'] = array(
             '#type' => 'select',
@@ -140,13 +134,11 @@ function jailadmin_admin_settings_submit($form, &$form_state) {
         $j = new Jail;
         $j->name = $name;
         $j->dataset = $dataset;
-        $j->route = $route;
 
         $j->Create($template);
 
         $form_state['input']['new_name'] = '';
         $form_state['input']['new_dataset'] = '';
-        $form_state['input']['new_route'] = '';
         $form_state['input']['new_template'] = '';
     }
 
@@ -198,10 +190,22 @@ function jailadmin_admin_settings_network($form, &$form_state) {
                 '#disabled' => $disabled,
             );
 
-            $form['jailadmin_networks']['ip'] = array(
+            $form['jailadmin_networks']['ips'] = array(
+                '#type' => 'fieldset',
+                '#title' => t('IP Assignments'),
+            );
+
+            $form['jailadmin_networks']['ips']['ip'] = array(
+                '#type' => 'select',
+                '#title' => t('Existing Assigned IPs'),
+                '#multiple' => TRUE,
+                '#disabled' => $disabled,
+                '#options' => drupal_map_assoc($network->ips),
+            );
+
+            $form['jailadmin_networks']['ips']['new_bridge_ip'] = array(
                 '#type' => 'textfield',
-                '#title' => t('IP'),
-                '#default_value' => t($network->ip),
+                '#title' => t('New IP'),
                 '#size' => 60,
                 '#disabled' => $disabled,
             );
@@ -291,12 +295,6 @@ function jailadmin_admin_settings_network($form, &$form_state) {
         '#size' => 60,
     );
 
-    $form['jailadmin_new_network']['new_ip'] = array(
-        '#type' => 'textfield',
-        '#title' => t('IP'),
-        '#size' => 60,
-    );
-
     $form['select_network'] = array(
         '#type' => 'submit',
         '#submit' => array('jailadmin_admin_settings_network_select_network_submit'),
@@ -340,34 +338,32 @@ function jailadmin_admin_settings_network_submit($form, &$form_state) {
             return;
         }
 
-        if (strlen($form_state['values']['new_ip'])) {
-            if (Network::IsIPAvailable($form_state['values']['new_ip']) == FALSE) {
-                form_set_error('new_ip', t('IP not available'));
-                $form_state['rebuild'] = TRUE;
-                return;
-            }
-        }
-
         $network = new Network;
 
         $network->name = $form_state['values']['new_name'];
         $network->device = $form_state['values']['new_device'];
-        $network->ip = $form_state['values']['new_ip'];
 
         $network->Create();
 
         /* Reset form to be able to select the network without attempting to create a new one of the same name */
         $form_state['input']['new_name'] = '';
-        $form_state['input']['new_ip'] = '';
         $form_state['input']['new_device'] = '';
+    }
+
+    if (isset($form_state['values']['ip'])) {
+        foreach (array_filter($form_state['values']['ip']) as $ip) {
+            db_delete('jailadmin_bridge_aliases')
+                ->condition('ip', $ip)
+                ->execute();
+        }
     }
 
     if (isset($form_state['values']['device']) && strlen($form_state['values']['device'])) {
         $network = Network::Load($form_state['values']['network']);
 
-        if (strcmp($network->ip, $form_state['values']['ip']) && strlen($form_state['values']['ip'])) {
-            if (Network::IsIPAvailable($form_state['values']['ip']) == FALSE) {
-                form_set_error('ip', t('IP not available'));
+        if (isset($form_state['values']['new_bridge_ip']) && strlen($form_state['values']['new_bridge_ip'])) {
+            if (Network::IsIPAvailable($form_state['values']['new_bridge_ip']) == FALSE) {
+                form_set_error('new_bridge_ip', t('IP not available'));
                 $form_state['rebuild'] = TRUE;
                 return;
             }
@@ -382,9 +378,11 @@ function jailadmin_admin_settings_network_submit($form, &$form_state) {
         }
 
         $network->device = $form_state['values']['device'];
-        $network->ip = $form_state['values']['ip'];
+        $network->AddIP($form_state['values']['new_bridge_ip']);
 
         $network->Persist();
+        $form_state['input']['new_bridge_ip'] = '';
+        $form_state['input']['ip'] = array();
     }
 
     $form_state['rebuild'] = TRUE;

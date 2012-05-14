@@ -4,7 +4,7 @@ class Jail {
     public $name;
     public $path;
     public $dataset;
-    public $route;
+    public $routes;
     public $network;
     public $services;
     public $mounts;
@@ -40,10 +40,23 @@ class Jail {
         $jail = new Jail;
         $jail->name = $record['name'];
         $jail->dataset = $record['dataset'];
-        $jail->route = $record['route'];
         $jail->network = NetworkDevice::Load($jail);
         $jail->services = Service::Load($jail);
         $jail->mounts = Mount::Load($jail);
+
+        $result = db_select('jailadmin_routes', 'jr')
+            ->fields('jr', array('source', 'destination'))
+            ->condition('jail', $jail->name)
+            ->execute();
+
+        $jail->routes = array();
+        foreach ($result as $route) {
+            $arr = array();
+            $arr['source'] = $route->source;
+            $arr['destination'] = $route->destination;
+
+            $jail->routes[] = $arr;
+        }
 
         $jail->path = exec("/sbin/zfs get -H -o value mountpoint {$jail->dataset}");
 
@@ -105,16 +118,16 @@ class Jail {
         $status = "";
 
         foreach ($this->network as $n) {
-            $ip = "";
-            if (strlen($n->ip))
-                $ip = $n->ip;
-            else
-                $ip = "(NO IP)";
-
             if ($n->is_span)
-                $ip .= " (SPAN)";
+                $status = "(SPAN)";
 
-            $status .= (strlen($status) ? ", " : "") . $ip . ($n->IsOnline() ? " (online)" : " (offline)");
+            if (!count($n->ips))
+                $status .= " (NO IP)";
+
+            foreach ($n->ips as $ip)
+                $status .= " {$ip}";
+
+            $status .= ($n->IsOnline()) ? " (online)" : " (offline)";
         }
 
         return $status;
@@ -134,8 +147,11 @@ class Jail {
         foreach ($this->network as $n)
             $n->BringGuestOnline();
 
-        if (strlen($this->route))
-            exec("/usr/local/bin/sudo /usr/sbin/jexec {$this->name} route add default {$this->route}");
+        foreach ($this->routes as $route) {
+            $inet = (strstr($route['destination'], ':') === FALSE) ? 'inet' : 'inet6';
+
+            exec("/usr/local/bin/sudo /usr/sbin/jexec '{$this->name}' route add -{$inet} '{$route['source']}' '{$route['destination']}'");
+        }
 
         foreach ($this->mounts as $mount) {
             $command = "/usr/local/bin/sudo /sbin/mount ";

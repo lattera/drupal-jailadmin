@@ -15,7 +15,17 @@ function get_all_networks_for_select() {
     $networks = array();
 
     foreach ($all as $network) {
-        $ip = (strlen($network->ip)) ? $network->ip : "NO IP";
+        $ip = "";
+        
+        if (!count($network->ips))
+            $ip = "NO IP";
+
+        foreach ($network->ips as $rawip) {
+            if (strlen($ip))
+                $ip .= ", ";
+
+            $ip .= (strlen($rawip)) ? $rawip : "NO IP";
+        }
 
         $networks[$network->name] = $network->name . ' (' . $ip . ')';
     }
@@ -27,12 +37,20 @@ function get_all_network_devices_for_select($jail) {
     $networks = array();
 
     foreach ($jail->network as $network) {
-        $ip = (strlen($network->ip)) ? $network->ip : "NO IP";
-        $span = "";
-        if ($network->is_span)
-            $span = " (SPAN)";
+        $ip = "";
 
-        $ip .= $span;
+        if ($network->is_span)
+            $ip .= "(SPAN) ";
+
+        if (!count($network->ips))
+            $ip .= "(NO IP)";
+
+        foreach ($network->ips as $rawip) {
+            if (strlen($ip))
+                $ip .= ", ";
+
+            $ip .= (strlen($rawip)) ? $rawip : "NO IP";
+        }
 
         $networks[$network->device] = t($network->device . ' (' . $ip . ')');
     }
