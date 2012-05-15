@@ -97,6 +97,16 @@ function jailadmin_menu() {
         'type' => MENU_NORMAL_ITEM,
     );
 
+    $items['jailadmin/%/network'] = array(
+        'title' => 'Configure Jail Network',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('jailadmin_config_network', 1),
+        'file' => 'jailnetwork.inc',
+        'access callback' => 'jail_config_access',
+        'access arguments' => array(1),
+        'type' => MENU_NORMAL_ITEM,
+    );
+
     return $items;
 }
 

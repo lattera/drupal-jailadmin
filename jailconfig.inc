@@ -12,6 +12,7 @@ function jailadmin_config($form, &$form_state) {
     $network_devices = get_all_network_devices_for_select($jail);
     $services = get_all_services_for_select($jail);
     $mounts = get_all_mounts_for_select($jail);
+    $routes = get_all_routes_for_select($jail);
     $readonly = FALSE;
 
     if (user_access('config ' . $jail->name) == FALSE)
@@ -56,6 +57,13 @@ function jailadmin_config($form, &$form_state) {
     );
 
     if (count($network_devices)) {
+        $form['network_devices']['devconfig'] = array(
+            '#type' => 'markup',
+            '#prefix' => '<div>',
+            '#markup' => l('Configure existing devices', "jailadmin/{$jail->name}/network"),
+            '#suffix' => '</div>',
+        );
+
         $form['network_devices']['devices'] = array(
             '#type' => 'select',
             '#title' => t('Network Devices'),
@@ -87,6 +95,43 @@ function jailadmin_config($form, &$form_state) {
         '#description' => 'Device is a span device?',
         '#default_value' => FALSE,
     );
+
+    $form['routes'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Routes'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+    );
+
+    if (count($routes)) {
+        $form['routes']['existing_routes'] = array(
+            '#type' => 'select',
+            '#title' => t('Existing Routes'),
+            '#description' => t('Select one or more to delete'),
+            '#multiple' => TRUE,
+            '#options' => $routes,
+            '#disabled' => $jail->IsOnline() || $readonly,
+        );
+
+        $form['routes']['new_route'] = array(
+            '#type' => 'fieldset',
+            '#title' => t('New Route'),
+        );
+
+        $form['routes']['new_route']['new_route_source'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Source'),
+            '#size' => 60,
+            '#disabled' => $jail->IsOnline() || $readonly,
+        );
+
+        $form['routes']['new_route']['new_route_destination'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Destination'),
+            '#size' => 60,
+            '#disabled' => $jail->IsOnline() || $readonly,
+        );
+    }
 
     $form['services'] = array(
         '#type' => 'fieldset',
@@ -231,13 +276,6 @@ function jailadmin_config($form, &$form_state) {
         '#disabled' => $jail->IsOnline() || $readonly,
     );
 
-    $form['jail_actions']['setup_services'] = array(
-        '#type' => 'submit',
-        '#value' => t('Setup Services'),
-        '#submit' => array('jail_actions_setup_services'),
-        '#disabled' => $jail->IsOnline() || $readonly,
-    );
-
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Save Configuration'),
@@ -276,6 +314,21 @@ function jailadmin_config_submit($form, &$form_state) {
         foreach(array_filter($form_state['values']['devices']) as $device) {
             $network_device = NetworkDevice::LoadByDeviceName($jail, $device);
             $network_device->Delete();
+        }
+    }
+
+    if (isset($form_state['values']['existing_routes'])) {
+        foreach(array_filter($form_state['values']['existing_routes']) as $route) {
+            $arr = explode('^', $route);
+            if (count($arr) != 3) {
+                drupal_set_message(t('Improper route object sent'), 'error');
+            } else {
+                db_delete('jailadmin_routes')
+                    ->condition('jail', $jail->name)
+                    ->condition('source', $arr[0])
+                    ->condition('destination', $arr[1])
+                    ->execute();
+            }
         }
     }
 
@@ -324,6 +377,18 @@ function jailadmin_config_submit($form, &$form_state) {
         $form_state['input']['new_network_device'] = '';
     }
 
+    if (isset($form_state['values']['new_route_source']) && strlen($form_state['values']['new_route_source'])) {
+        db_insert('jailadmin_routes')
+            ->fields(array(
+                'jail' => $jail->name,
+                'source' => $form_state['values']['new_route_source'],
+                'destination' => $form_state['values']['new_route_destination'],
+            ))->execute();
+
+        $form_state['input']['new_route_source'] = '';
+        $form_state['input']['new_route_destination'] = '';
+    }
+
     if (isset($form_state['values']['services'])) {
         foreach (array_filter($form_state['values']['services']) as $raw_service) {
             $service = new Service;
@@ -346,6 +411,8 @@ function jailadmin_config_submit($form, &$form_state) {
 
     if ($dirty)
         $jail->Persist();
+
+    drupal_set_message(t('Settings saved!'));
 
     $form_state['rebuild']  = TRUE;
 }
@@ -437,14 +504,6 @@ function jail_actions_upgrade($form, &$form_state) {
         drupal_set_message(t('Jail @jail upgraded successfully. NOTE: Upgrade started in background. Wait a few minutes before starting jail.', array('@jail' => $jail->name)));
     else
         drupal_set_message(t('Jail @jail upgraded unsuccessfully', array('@jail' => $jail->name)));
-
-    $form_state['rebuild'] = TRUE;
-}
-
-function jail_actions_setup_services($form, &$form_state) {
-    $jail = Jail::Load($form_state['build_info']['args'][0]);
-
-    $jail->SetupServices();
 
     $form_state['rebuild'] = TRUE;
 }

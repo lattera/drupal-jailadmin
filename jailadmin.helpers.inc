@@ -86,3 +86,13 @@ function get_all_mounts_for_select($jail) {
 
     return $mounts;
 }
+
+function get_all_routes_for_select($jail) {
+    $routes = array();
+
+    $i=0;
+    foreach ($jail->routes as $route)
+        $routes[$route['source'] . '^' . $route['destination'] . '^' . $i++] = $route['source'] . '->' . $route['destination'];
+
+    return $routes;
+}
