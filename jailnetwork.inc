@@ -55,19 +55,29 @@ function jailadmin_config_network($form, &$form_state) {
     }
 
     if ($devicename !== FALSE) {
+        $device = NetworkDevice::LoadByDeviceName($jail, $devicename);
+
         $form['devices'][$devicename]['settings'] = array(
             '#type' => 'fieldset',
             '#title' => t('@device settings', array('@device' => $devicename)),
         );
 
-        $device = NetworkDevice::LoadByDeviceName($jail, $devicename);
+        $form['devices'][$devicename]['is_span'] = array(
+            '#type' => 'checkbox',
+            '#title' => t('Span Device'),
+            '#description' => t('Is the device a SPAN device?'),
+        );
+
+        if ($device->is_span)
+            $form['devices'][$devicename]['is_span']['#attributes']['checked'] = 'checked';
+
         $form['devices'][$devicename]['settings']['existing'] = array(
             '#type' => 'select',
             '#title' => t('Existing IPs'),
             '#description' => t('Select one or more to delete'),
             '#multiple' => TRUE,
             '#options' => drupal_map_assoc($device->ips),
-            '#disabled' => $jail->IsOnline() || $readonly,
+            '#disabled' => $jail->IsOnline() || $readonly || $devicename === FALSE,
         );
 
         $form['devices'][$devicename]['new_ip'] = array(
@@ -78,11 +88,24 @@ function jailadmin_config_network($form, &$form_state) {
         );
     }
 
+    $form['refresh'] = array(
+        '#type' => 'submit',
+        '#value' => t('Refresh'),
+        '#submit' => array('jailadmin_config_network_refresh'),
+    );
+
     $form['save'] = array(
         '#type' => 'submit',
         '#value' => t('Save'),
+        '#disabled' => $jail->IsOnline() || $readonly,
     );
 
+    $form_state['rebuild'] = TRUE;
+
+    return $form;
+}
+
+function jailadmin_config_network_refresh($form, &$form_state) {
     $form_state['rebuild'] = TRUE;
 
     return $form;
@@ -114,6 +137,15 @@ function jailadmin_config_network_submit($form, &$form_state) {
             ))->execute();
 
         $form_state['input']['new_ip'] = '';
+    }
+
+    if (isset($form_state['values']['is_span'])) {
+        db_update('jailadmin_epairs')
+            ->condition('jail', $jail->name)
+            ->condition('device', $devicename)
+            ->fields(array(
+                'is_span' => $form_state['values']['is_span']
+            ))->execute();
     }
 
     drupal_set_message(t('Settings saved!'));

@@ -319,3 +319,12 @@ function jailadmin_update_7003() {
             ))->execute();
     }
 }
+
+/**
+ * Drop unneeded fields
+ */
+function jailadmin_update_7004() {
+    db_drop_field('jailadmin_epairs', 'ip');
+    db_drop_field('jailadmin_bridges', 'ip');
+    db_drop_field('jailadmin_jails', 'route');
+}
