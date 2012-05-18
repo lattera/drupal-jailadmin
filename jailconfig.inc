@@ -112,26 +112,26 @@ function jailadmin_config($form, &$form_state) {
             '#options' => $routes,
             '#disabled' => $jail->IsOnline() || $readonly,
         );
-
-        $form['routes']['new_route'] = array(
-            '#type' => 'fieldset',
-            '#title' => t('New Route'),
-        );
-
-        $form['routes']['new_route']['new_route_source'] = array(
-            '#type' => 'textfield',
-            '#title' => t('Source'),
-            '#size' => 60,
-            '#disabled' => $jail->IsOnline() || $readonly,
-        );
-
-        $form['routes']['new_route']['new_route_destination'] = array(
-            '#type' => 'textfield',
-            '#title' => t('Destination'),
-            '#size' => 60,
-            '#disabled' => $jail->IsOnline() || $readonly,
-        );
     }
+
+    $form['routes']['new_route'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('New Route'),
+    );
+
+    $form['routes']['new_route']['new_route_source'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Source'),
+        '#size' => 60,
+        '#disabled' => $jail->IsOnline() || $readonly,
+    );
+
+    $form['routes']['new_route']['new_route_destination'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Destination'),
+        '#size' => 60,
+        '#disabled' => $jail->IsOnline() || $readonly,
+    );
 
     $form['services'] = array(
         '#type' => 'fieldset',
