@@ -121,14 +121,10 @@ class Network {
     }
 
     public function Create() {
-        if (Network::IsIPAvailable($this->ip) == FALSE)
-            return FALSE;
-
         db_insert('jailadmin_bridges')
             ->fields(array(
                 'name' => $this->name,
                 'device' => $this->device,
-                'ip' => $this->ip,
             ))->execute();
 
         return TRUE;

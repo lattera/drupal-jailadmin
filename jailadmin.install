@@ -14,10 +14,6 @@ function jailadmin_schema() {
                 'length' => 500,
                 'not null' => TRUE,
             ),
-            'route' => array(
-                'type' => 'varchar',
-                'length' => 45,
-            ),
         ),
         'primary key' => array('name'),
     );
@@ -50,10 +46,6 @@ function jailadmin_schema() {
                 'type' => 'varchar',
                 'length' => 20,
                 'not null' => TRUE,
-            ),
-            'ip' => array(
-                'type' => 'varchar',
-                'length' => 45,
             ),
         ),
         'primary key' => array('name'),
@@ -116,11 +108,6 @@ function jailadmin_schema() {
             'bridge' => array(
                 'type' => 'varchar',
                 'length' => 100,
-                'not null' => TRUE,
-            ),
-            'ip' => array(
-                'type' => 'varchar',
-                'length' => 45,
                 'not null' => TRUE,
             ),
             'is_span' => array(
