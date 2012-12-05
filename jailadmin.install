@@ -118,12 +118,12 @@ function jailadmin_schema() {
                 'length' => 100,
                 'not null' => TRUE,
             ),
-            'ip' => array(
-                'type' => 'varchar',
-                'length' => 45,
-                'not null' => TRUE,
-            ),
             'is_span' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+            'dhcp' => array(
                 'type' => 'int',
                 'not null' => TRUE,
                 'default' => 0,
@@ -327,4 +327,17 @@ function jailadmin_update_7004() {
     db_drop_field('jailadmin_epairs', 'ip');
     db_drop_field('jailadmin_bridges', 'ip');
     db_drop_field('jailadmin_jails', 'route');
+}
+
+/**
+ * Add DHCP support
+ */
+function jailadmin_update_7005() {
+    $spec = array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+    );
+
+    db_add_field('jailadmin_epairs', 'dhcp', $spec);
 }

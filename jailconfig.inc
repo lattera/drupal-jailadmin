@@ -96,6 +96,12 @@ function jailadmin_config($form, &$form_state) {
         '#default_value' => FALSE,
     );
 
+    $form['network_devices']['new_network_dhcp'] = array(
+        '#type' => 'checkbox',
+        '#title' => 'Use DHCP',
+        '#default_value' => FALSE,
+    );
+
     $form['routes'] = array(
         '#type' => 'fieldset',
         '#title' => t('Routes'),
@@ -371,6 +377,7 @@ function jailadmin_config_submit($form, &$form_state) {
         $network_device->bridge = Network::Load($form_state['values']['new_network_network']);
         $network_device->device = $form_state['values']['new_network_device'];
         $network_device->is_span = $form_state['values']['new_network_span'];
+        $network_device->dhcp = $form_state['values']['new_network_dhcp'];
 
         $network_device->Create();
 

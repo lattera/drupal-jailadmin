@@ -5,6 +5,7 @@ class NetworkDevice {
     public $ips;
     public $bridge;
     public $is_span;
+    public $dhcp;
     public $jail;
 
     public static function Load($jail) {
@@ -65,6 +66,9 @@ class NetworkDevice {
 
         exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b up");
 
+        if ($this->dhcp)
+            exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" /sbin/dhclient {$this->device}b > /dev/null 2>&1 &");
+
         return TRUE;
     }
 
@@ -84,6 +88,7 @@ class NetworkDevice {
         $net_device = new NetworkDevice;
         $net_device->device = $record['device'];
         $net_device->is_span = ($record['is_span'] == 1) ? TRUE : FALSE;
+        $net_device->dhcp = ($record['dhcp'] == 1) ? TRUE : FALSE;
         $net_device->bridge = Network::Load($record['bridge']);
         $net_device->jail = $jail;
 
@@ -136,6 +141,7 @@ class NetworkDevice {
                 'device' => $this->device,
                 'bridge' => $this->bridge->name,
                 'is_span' => ($this->is_span) ? 1 : 0,
+                'dhcp' => ($this->dhcp) ? 1 : 0,
             ))->execute();
 
         return TRUE;
