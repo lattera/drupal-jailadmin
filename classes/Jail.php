@@ -241,6 +241,10 @@ class Jail {
         foreach ($this->mounts as $m)
             $m->Delete();
 
+        db_delete('jailadmin_routes')
+            ->condition('jail', $this->name)
+            ->execute();
+
         db_delete('jailadmin_jails')
             ->condition('name', $this->name)
             ->execute();
@@ -252,7 +256,6 @@ class Jail {
     public function Persist() {
         db_update('jailadmin_jails')
             ->fields(array(
-                'route' => $this->route,
                 'dataset' => $this->dataset,
             ))
             ->condition('name', $this->name)
