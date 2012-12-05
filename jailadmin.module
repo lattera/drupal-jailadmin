@@ -14,7 +14,7 @@ function jailadmin_permission() {
 
     $perms = array(
         'administer jails' => array(
-            'title' => t('Administer Wayfair Jail Admin'),
+            'title' => t('Administer FreeBSD Jail Admin'),
         ),
         'start jails' => array(
             'title' => t('Start/Stop jails'),
@@ -44,7 +44,7 @@ function jailadmin_menu() {
     /* Admin settings */
     $items['admin/config/jailadmin'] = array(
         'title' => 'Wayfair Jail Admin',
-        'description' => 'Wayfair Jail Admin settings',
+        'description' => 'FreeBSD Jail Admin settings',
         'position' => 'right',
         'weight' => -5,
         'page callback' => 'system_admin_menu_block_page',
@@ -56,7 +56,7 @@ function jailadmin_menu() {
 
     $items['admin/config/jailadmin/settings'] = array(
         'title' => 'Wayfair Jail Admin Settings',
-        'description' => 'Settings for Wayfair Jail Admin',
+        'description' => 'Settings for FreeBSD Jail Admin',
         'page callback' => 'drupal_get_form',
         'page arguments' => array('jailadmin_admin_settings'),
         'access callback' => 'user_access',
@@ -66,7 +66,7 @@ function jailadmin_menu() {
     );
 
     $items['admin/config/jailadmin/networks'] = array(
-        'title' => 'Wayfair Jail Networks',
+        'title' => 'FreeBSD Jail Networks',
         'description' => 'Networks for Jails',
         'page callback' => 'drupal_get_form',
         'page arguments' => array('jailadmin_admin_settings_network'),
