@@ -94,12 +94,14 @@ function jailadmin_config($form, &$form_state) {
         '#title' => 'Span Device',
         '#description' => 'Device is a span device?',
         '#default_value' => FALSE,
+        '#disabled' => $jail->isOnline() || $readonly,
     );
 
     $form['network_devices']['new_network_dhcp'] = array(
         '#type' => 'checkbox',
         '#title' => 'Use DHCP',
         '#default_value' => FALSE,
+        '#disabled' => $jail->isOnline() || $readonly,
     );
 
     $form['routes'] = array(
@@ -118,26 +120,26 @@ function jailadmin_config($form, &$form_state) {
             '#options' => $routes,
             '#disabled' => $jail->IsOnline() || $readonly,
         );
-
-        $form['routes']['new_route'] = array(
-            '#type' => 'fieldset',
-            '#title' => t('New Route'),
-        );
-
-        $form['routes']['new_route']['new_route_source'] = array(
-            '#type' => 'textfield',
-            '#title' => t('Source'),
-            '#size' => 60,
-            '#disabled' => $jail->IsOnline() || $readonly,
-        );
-
-        $form['routes']['new_route']['new_route_destination'] = array(
-            '#type' => 'textfield',
-            '#title' => t('Destination'),
-            '#size' => 60,
-            '#disabled' => $jail->IsOnline() || $readonly,
-        );
     }
+
+    $form['routes']['new_route'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('New Route'),
+    );
+
+    $form['routes']['new_route']['new_route_source'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Source'),
+        '#size' => 60,
+        '#disabled' => $jail->IsOnline() || $readonly,
+    );
+
+    $form['routes']['new_route']['new_route_destination'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Destination'),
+        '#size' => 60,
+        '#disabled' => $jail->IsOnline() || $readonly,
+    );
 
     $form['services'] = array(
         '#type' => 'fieldset',
