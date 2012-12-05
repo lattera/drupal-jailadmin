@@ -68,8 +68,16 @@ function jailadmin_config_network($form, &$form_state) {
             '#description' => t('Is the device a SPAN device?'),
         );
 
+        $form['devices'][$devicename]['dhcp'] = array(
+            '#type' => 'checkbox',
+            '#title' => t('Use DHCP'),
+        );
+
         if ($device->is_span)
             $form['devices'][$devicename]['is_span']['#attributes']['checked'] = 'checked';
+
+        if ($device->dhcp)
+            $form['devices'][$devicename]['dhcp']['#attributes']['checked'] = 'checked';
 
         $form['devices'][$devicename]['settings']['existing'] = array(
             '#type' => 'select',
@@ -144,7 +152,16 @@ function jailadmin_config_network_submit($form, &$form_state) {
             ->condition('jail', $jail->name)
             ->condition('device', $devicename)
             ->fields(array(
-                'is_span' => $form_state['values']['is_span']
+                'is_span' => $form_state['values']['is_span'],
+            ))->execute();
+    }
+
+    if (isset($form_state['values']['dhcp'])) {
+        db_update('jailadmin_epairs')
+            ->condition('jail', $jail->name)
+            ->condition('device', $devicename)
+            ->fields(array(
+                'dhcp' => $form_state['values']['dhcp'],
             ))->execute();
     }
 
