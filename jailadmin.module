@@ -43,7 +43,7 @@ function jailadmin_permission() {
 function jailadmin_menu() {
     /* Admin settings */
     $items['admin/config/jailadmin'] = array(
-        'title' => 'Wayfair Jail Admin',
+        'title' => 'FreeBSD Jail Admin',
         'description' => 'FreeBSD Jail Admin settings',
         'position' => 'right',
         'weight' => -5,
@@ -55,7 +55,7 @@ function jailadmin_menu() {
     );
 
     $items['admin/config/jailadmin/settings'] = array(
-        'title' => 'Wayfair Jail Admin Settings',
+        'title' => 'FreeBSD Jail Admin Settings',
         'description' => 'Settings for FreeBSD Jail Admin',
         'page callback' => 'drupal_get_form',
         'page arguments' => array('jailadmin_admin_settings'),
