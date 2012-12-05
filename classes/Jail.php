@@ -166,6 +166,8 @@ class Jail {
         foreach ($this->services as $service)
             exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" {$service->path} start");
 
+        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /bin/sh /etc/rc");
+
         return TRUE;
     }
 
