@@ -228,7 +228,6 @@ class Jail {
             ->fields(array(
                 'name' => $this->name,
                 'dataset' => $this->dataset,
-                'route' => $this->route,
             ))->execute();
     }
 

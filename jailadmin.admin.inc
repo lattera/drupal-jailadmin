@@ -126,7 +126,6 @@ function jailadmin_admin_settings_submit($form, &$form_state) {
         $template = '';
         $name = $form_state['values']['new_name'];
         $dataset = $form_state['values']['new_dataset'];
-        $route = $form_state['values']['new_route'];
 
         if (isset($form_state['values']['new_template']) && strlen($form_state['values']['new_template']))
             $template = $form_state['values']['new_template'];
