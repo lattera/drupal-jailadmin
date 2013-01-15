@@ -7,6 +7,7 @@ class NetworkDevice {
     public $is_span;
     public $dhcp;
     public $jail;
+    public $ipv6;
 
     public static function Load($jail) {
         $result = db_query('SELECT * FROM {jailadmin_epairs} WHERE jail = :jail', array(':jail' => $jail->name));
@@ -64,7 +65,7 @@ class NetworkDevice {
             exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b {$inet} \"{$ip}\" alias");
         }
 
-        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b up");
+        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" /sbin/ifconfig {$this->device}b up");
 
         if ($this->dhcp)
             exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" /sbin/dhclient {$this->device}b > /dev/null 2>&1 &");
@@ -91,6 +92,7 @@ class NetworkDevice {
         $net_device->dhcp = ($record['dhcp'] == 1) ? TRUE : FALSE;
         $net_device->bridge = Network::Load($record['bridge']);
         $net_device->jail = $jail;
+        $net_device->ipv6 = false;
 
         $net_device->ips = array();
         $ip_records = db_select('jailadmin_epair_aliases', 'jea')
@@ -98,8 +100,11 @@ class NetworkDevice {
             ->condition('device', $net_device->device)
             ->execute();
 
-        foreach ($ip_records as $ip_record)
+        foreach ($ip_records as $ip_record) {
             $net_device->ips[] = $ip_record->ip;
+            if (strstr($ip_record->ip, ":") !== FALSE)
+                $net_device->ipv6 = true;
+        }
 
         return $net_device;
     }

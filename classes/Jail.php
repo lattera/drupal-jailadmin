@@ -168,6 +168,10 @@ class Jail {
 
         exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /bin/sh /etc/rc");
 
+        foreach ($this->network as $n)
+            if ($n->ipv6)
+                exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /sbin/ifconfig {$n->device}b inet6 -ifdisabled");
+
         return TRUE;
     }
 
