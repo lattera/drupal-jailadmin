@@ -23,6 +23,12 @@ function jailadmin_config_network($form, &$form_state) {
     $devicename = check_input($form_state, 'device');
     $readonly = FALSE;
 
+    $title = l($jail->name, 'jailadmin/' . $jail->name . '/config');
+    if ($devicename !== FALSE)
+        $title .= " ({$devicename})";
+
+    drupal_set_title("Configuring Network for {$title}", PASS_THROUGH);
+
     if (user_access('config ' . $jail->name) == FALSE)
         $readonly = TRUE;
 
