@@ -25,6 +25,8 @@ function jailadmin_config($form, &$form_state) {
         }
     }
 
+    drupal_set_title(t('Configure @jail', array('@jail' => $jail->name)));
+
     if ($jail->IsOnline())
         drupal_set_message(t('NOTE: Jail is online. All settings are read-only.'), 'status');
 
