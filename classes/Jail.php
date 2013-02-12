@@ -172,6 +172,8 @@ class Jail {
             if ($n->ipv6)
                 exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /sbin/ifconfig {$n->device}b inet6 -ifdisabled");
 
+        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /sbin/ifconfig lo0 inet 127.0.0.1");
+
         return TRUE;
     }
 
