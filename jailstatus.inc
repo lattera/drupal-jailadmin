@@ -24,6 +24,8 @@ function jailadmin_status($form, &$form_state) {
         else
             $action = l("Start", "jailadmin/{$jail->name}/start");
 
+        $action .= " | " . l("Snapshot", "jailadmin/{$jail->name}/snapshot");
+
         $rows[] = array($name, $jail->IsOnlineString(), $jail->NetworkStatus(),  $action);
     }
 
@@ -62,6 +64,19 @@ function jail_stop($form, &$form_state) {
     } else {
         drupal_set_message(t('Jail @jail failed to stop', array('@jail' => $jail->name)), 'error');
     }
+
+    $form_state['rebuild'] = true;
+
+    return jailadmin_status($form, $form_state);
+}
+
+function jail_snapshot($form, &$form_state) {
+    $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if ($jail->Snapshot())
+        drupal_set_message(t('Jail @jail snapshot successful', array('@jail' => $jail->name)));
+    else
+        drupal_set_message(t('Jail @jail snapshot unsuccessful', array('@jail' => $jail->name)));
 
     $form_state['rebuild'] = true;
 
