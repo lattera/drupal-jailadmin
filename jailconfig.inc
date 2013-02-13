@@ -262,14 +262,14 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'submit',
         '#value' => t('Start Jail'),
         '#submit' => array('jail_actions_start'),
-        '#disabled' => $jail->IsOnline() || $readonly,
+        '#disabled' => $jail->IsOnline() || $readonly || (user_access("start jails") == FALSE),
     );
 
     $form['jail_actions']['stop'] = array(
         '#type' => 'submit',
         '#value' => t('Stop Jail'),
         '#submit' => array('jail_actions_stop'),
-        '#disabled' => !$jail->IsOnline() || $readonly,
+        '#disabled' => !$jail->IsOnline() || $readonly || (user_access("start jails") == FALSE),
     );
 
     $form['jail_actions']['snapshot'] = array(
@@ -444,6 +444,12 @@ function create_template($form, &$form_state) {
 function snapshot_delete($form, &$form_state) {
     $jail = Jail::Load($form_state['build_info']['args'][0]);
 
+    if (user_access("config {$jail->name}") == FALSE) {
+        drupal_set_message(t("Access Denied"), "error");
+        $form_state['rebuild'] = TRUE;
+        return;
+    }
+
     if (isset($form_state['values']['existing_snapshots'])) {
         foreach(array_filter($form_state['values']['existing_snapshots']) as $snapshot) {
             $jail->DeleteSnapshot($snapshot);
@@ -456,6 +462,12 @@ function snapshot_delete($form, &$form_state) {
 
 function snapshot_revert($form, &$form_state) {
     $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if (user_access("config {$jail->name}") == FALSE) {
+        drupal_set_message(t("Access Denied"), "error");
+        $form_state['rebuild'] = TRUE;
+        return;
+    }
 
     if (isset($form_state['values']['existing_snapshots'])) {
         $snapshots = array_filter($form_state['values']['existing_snapshots']);
@@ -476,6 +488,12 @@ function snapshot_revert($form, &$form_state) {
 }
 
 function jail_actions_start($form, &$form_state) {
+    if (user_access("start jails") == FALSE) {
+        drupal_set_message(t("Access Denied"), "error");
+        $form_state['rebuild'] = TRUE;
+        return;
+    }
+
     $jail = Jail::Load($form_state['build_info']['args'][0]);
 
     if ($jail->Start())
@@ -487,6 +505,12 @@ function jail_actions_start($form, &$form_state) {
 }
 
 function jail_actions_stop($form, &$form_state) {
+    if (user_access("start jails") == FALSE) {
+        drupal_set_message(t("Access Denied"), "error");
+        $form_state['rebuild'] = TRUE;
+        return;
+    }
+
     $jail = Jail::Load($form_state['build_info']['args'][0]);
 
     if ($jail->Stop())
@@ -499,6 +523,11 @@ function jail_actions_stop($form, &$form_state) {
 
 function jail_actions_snapshot($form, &$form_state) {
     $jail = Jail::Load($form_state['build_info']['args'][0]);
+    if (user_access("config {$jail->name}") == FALSE) {
+        drupal_set_message(t("Access Denied"), "error");
+        $form_state['rebuild'] = TRUE;
+        return;
+    }
 
     if ($jail->Snapshot())
         drupal_set_message(t('Jail @jail snapshot successful', array('@jail' => $jail->name)));
@@ -510,6 +539,12 @@ function jail_actions_snapshot($form, &$form_state) {
 
 function jail_actions_upgrade($form, &$form_state) {
     $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if (user_access("config {$jail->name}") == FALSE) {
+        drupal_set_message(t("Access Denied"), "error");
+        $form_state['rebuild'] = TRUE;
+        return;
+    }
 
     if ($jail->UpgradeWorld())
         drupal_set_message(t('Jail @jail upgraded successfully. NOTE: Upgrade started in background. Wait a few minutes before starting jail.', array('@jail' => $jail->name)));

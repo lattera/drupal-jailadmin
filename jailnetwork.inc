@@ -129,6 +129,11 @@ function jailadmin_config_network_submit($form, &$form_state) {
     $jail = Jail::Load($form_state['build_info']['args'][0]);
     $form_state['rebuild'] = TRUE;
 
+    if (user_access("config {$jail->name}") == FALSE) {
+        drupal_set_message(t("Access Denied"), "error");
+        return $form;
+    }
+
     $devicename = check_input($form_state, 'device');
     if ($devicename === FALSE)
         return $form;

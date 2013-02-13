@@ -19,12 +19,15 @@ function jailadmin_status($form, &$form_state) {
             $name = t('@name', array('@name' => $jail->name));
 
         $action = "";
-        if ($jail->IsOnline())
-            $action = l("Stop", "jailadmin/{$jail->name}/stop");
-        else
-            $action = l("Start", "jailadmin/{$jail->name}/start");
+        if (user_access("start jails")) {
+            if ($jail->IsOnline())
+                $action = l("Stop", "jailadmin/{$jail->name}/stop");
+            else
+                $action = l("Start", "jailadmin/{$jail->name}/start");
+        }
 
-        $action .= " | " . l("Snapshot", "jailadmin/{$jail->name}/snapshot");
+        if (user_access("config {$jail->name}"))
+            $action .= (strlen($action) ? " | " : "") . l("Snapshot", "jailadmin/{$jail->name}/snapshot");
 
         $rows[] = array($name, $jail->IsOnlineString(), $jail->NetworkStatus(),  $action);
     }
@@ -45,6 +48,13 @@ function jailadmin_status($form, &$form_state) {
 function jail_start($form, &$form_state) {
     $jail = Jail::Load($form_state['build_info']['args'][0]);
 
+    if (user_access("start jails") == FALSE) {
+        drupal_set_message(t("Access Denied"), "error");
+        $form_state['rebuild'] = TRUE;
+        drupal_goto("jailadmin/status");
+        return;
+    }
+
     if ($jail->Start()) {
         drupal_set_message(t('Jail @jail started successfully', array('@jail' => $jail->name)));
     } else {
@@ -53,11 +63,18 @@ function jail_start($form, &$form_state) {
 
     $form_state['rebuild'] = true;
 
-    return jailadmin_status($form, $form_state);
+    drupal_goto("jailadmin/status");
 }
 
 function jail_stop($form, &$form_state) {
     $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if (user_access("start jails") == FALSE) {
+        drupal_set_message(t("Access Denied"), "error");
+        $form_state['rebuild'] = TRUE;
+        drupal_goto("jailadmin/status");
+        return;
+    }
 
     if ($jail->Stop()) {
         drupal_set_message(t('Jail @jail stopped successfully', array('@jail' => $jail->name)));
@@ -67,11 +84,18 @@ function jail_stop($form, &$form_state) {
 
     $form_state['rebuild'] = true;
 
-    return jailadmin_status($form, $form_state);
+    drupal_goto("jailadmin/status");
 }
 
 function jail_snapshot($form, &$form_state) {
     $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if (user_access("config {$jail->name}") == FALSE) {
+        drupal_set_message(t("Access Denied"), "error");
+        $form_state['rebuild'] = TRUE;
+        drupal_goto("jailadmin/status");
+        return;
+    }
 
     if ($jail->Snapshot())
         drupal_set_message(t('Jail @jail snapshot successful', array('@jail' => $jail->name)));
@@ -80,5 +104,5 @@ function jail_snapshot($form, &$form_state) {
 
     $form_state['rebuild'] = true;
 
-    return jailadmin_status($form, $form_state);
+    drupal_goto("jailadmin/status");
 }
