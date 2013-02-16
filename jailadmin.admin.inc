@@ -361,7 +361,7 @@ function jailadmin_admin_settings_network_submit($form, &$form_state) {
         $network = Network::Load($form_state['values']['network']);
 
         if (isset($form_state['values']['new_bridge_ip']) && strlen($form_state['values']['new_bridge_ip'])) {
-            if (Network::IsIPAvailable($form_state['values']['new_bridge_ip']) == FALSE) {
+            if (NetworkDevice::IsIPAvailable($form_state['values']['new_bridge_ip']) == FALSE) {
                 form_set_error('new_bridge_ip', t('IP not available'));
                 $form_state['rebuild'] = TRUE;
                 return;

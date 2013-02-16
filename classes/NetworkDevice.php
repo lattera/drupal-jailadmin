@@ -119,6 +119,28 @@ class NetworkDevice {
         return TRUE;
     }
 
+    public static function IsIPAvailable($ip) {
+        $result = db_select('jailadmin_epair_aliases', 'jea')
+            ->fields('jea', array('ip'))
+            ->condition('jea.ip', $ip)
+            ->execute();
+
+        foreach ($result as $record)
+            if ($record->ip == $ip)
+                return false;
+
+        $result = db_select('jailadmin_bridge_aliases', 'jba')
+            ->fields('jba', array('ip'))
+            ->condition('jba.ip', $ip)
+            ->execute();
+
+        foreach ($result as $record)
+            if ($record->ip == $ip)
+                return false;
+
+        return true;
+    }
+
     public static function NextAvailableDevice() {
         $result = db_query('SELECT device FROM {jailadmin_epairs}');
 

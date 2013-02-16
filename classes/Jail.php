@@ -119,17 +119,21 @@ class Jail {
 
         foreach ($this->network as $n) {
             $status .= (strlen($status) ? ", " : "") . $n->device . " { ";
-            if ($n->is_span)
+            $i= 0;
+            if ($n->is_span) {
+                $i++;
                 $status .= "(SPAN)";
+            }
 
             if ($n->dhcp)
-                $status .= " (DHCP), ";
+                $status .= ($i++ > 0 ? "," : "") . " (DHCP)";
 
             if (!count($n->ips))
-                $status .= " (NO STATIC IP)";
+                $status .= ($i++ > 0 ? "," : " ") . " (NO STATIC IP)";
 
-            foreach ($n->ips as $ip)
-                $status .= " {$ip}";
+            foreach ($n->ips as $ip) {
+                $status .= ($i++ > 0 ? "," : "") . " {$ip}";
+            }
 
             $status .= ($n->IsOnline()) ? " (online)" : " (offline)";
 

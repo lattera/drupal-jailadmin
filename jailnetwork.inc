@@ -149,13 +149,17 @@ function jailadmin_config_network_submit($form, &$form_state) {
 
     $new_ip = check_input($form_state, 'new_ip');
     if ($new_ip !== FALSE && strlen($new_ip)) {
-        db_insert('jailadmin_epair_aliases')
-            ->fields(array(
-                'device' => $devicename,
-                'ip' => $new_ip,
-            ))->execute();
+        if (NetworkDevice::IsIPAvailable($new_ip) == false) {
+            drupal_set_message(t('@ip is already in use', array('@ip' => $new_ip)), 'error');
+        } else {
+            db_insert('jailadmin_epair_aliases')
+                ->fields(array(
+                    'device' => $devicename,
+                    'ip' => $new_ip,
+                ))->execute();
 
-        $form_state['input']['new_ip'] = '';
+            $form_state['input']['new_ip'] = '';
+        }
     }
 
     if (isset($form_state['values']['is_span'])) {

@@ -51,22 +51,6 @@ class Network {
         return $network;
     }
 
-    public static function IsIPAvailable($ip) {
-        $result = db_query('SELECT ip FROM {jailadmin_bridge_aliases} WHERE CHAR_LENGTH(ip) > 0');
-
-        foreach ($result as $record)
-            if (!strcmp($record->ip, $ip))
-                return FALSE;
-
-        $result = db_query('SELECT ip FROM {jailadmin_epair_aliases} WHERE CHAR_LENGTH(ip) > 0');
-
-        foreach ($result as $record)
-            if (!strcmp($record->ip, $ip))
-                return FALSE;
-
-        return TRUE;
-    }
-
     public static function IsDeviceAvailable($device) {
         $result = db_query('SELECT device FROM {jailadmin_bridges}');
 

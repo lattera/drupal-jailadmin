@@ -26,8 +26,13 @@ function jailadmin_status($form, &$form_state) {
                 $action = l("Start", "jailadmin/{$jail->name}/start");
         }
 
-        if (user_access("config {$jail->name}"))
-            $action .= (strlen($action) ? " | " : "") . l("Snapshot", "jailadmin/{$jail->name}/snapshot");
+        if (user_access("config {$jail->name}")) {
+            $network = l(t("Network Settings"), "jailadmin/{$jail->name}/network");
+
+            $action .= (strlen($action) ? " | " : "")
+                . l("Snapshot", "jailadmin/{$jail->name}/snapshot")
+                . " | {$network}";
+        }
 
         $rows[] = array($name, $jail->IsOnlineString(), $jail->NetworkStatus(),  $action);
     }
