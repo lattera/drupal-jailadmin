@@ -118,7 +118,7 @@ class Jail {
         $status = "";
 
         foreach ($this->network as $n) {
-            $status .= (strlen($status) ? ", " : "") . $n->device . " { ";
+            $status .= (strlen($status) ? ", " : "") . "{$n->bridge->name}[{$n->device} { ";
             $i= 0;
             if ($n->is_span) {
                 $i++;
@@ -137,7 +137,7 @@ class Jail {
 
             $status .= ($n->IsOnline()) ? " (online)" : " (offline)";
 
-            $status .= " }";
+            $status .= " }]";
         }
 
         return $status;
