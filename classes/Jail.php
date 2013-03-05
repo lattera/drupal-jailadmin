@@ -125,8 +125,12 @@ class Jail {
                 $status .= "(SPAN)";
             }
 
-            if ($n->dhcp)
-                $status .= ($i++ > 0 ? "," : "") . " (DHCP)";
+            if ($n->dhcp) {
+                $o = "";
+                if ($this->IsOnline())
+                    $o = exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" ifconfig {$n->device}b 2>&1 | grep -w inet | awk '{print $2;}'");
+                $status .= ($i++ > 0 ? "," : "") . " (DHCP" . (strlen($o) ? ": {$o}" : "") . ")";
+            }
 
             if (!count($n->ips))
                 $status .= ($i++ > 0 ? "," : " ") . " (NO STATIC IP)";
