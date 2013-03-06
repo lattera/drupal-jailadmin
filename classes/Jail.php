@@ -174,6 +174,9 @@ class Jail {
             if (strlen($mount->options))
                 $command .= "-o {$mount->options} ";
 
+            if (!is_dir("{$this->path}/{$mount->target}"))
+                exec("/usr/local/bin/sudo /bin/mkdir -p '{$this->path}/{$mount->target}'");
+
             exec("{$command} {$mount->source} {$this->path}/{$mount->target}");
         }
 
