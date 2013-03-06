@@ -37,6 +37,14 @@ function jailadmin_config($form, &$form_state) {
         '#collapsed' => FALSE,
     );
 
+    $form['base']['hostname'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Hostname'),
+        '#size' => 60,
+        '#disabled' => $jail->IsOnline() || $readonly,
+        "#default_value" => $jail->hostname,
+    );
+
     $form['base']['dataset'] = array(
         '#type' => 'textfield',
         '#title' => t('ZFS Dataset'),
@@ -315,6 +323,11 @@ function jailadmin_config_submit($form, &$form_state) {
 
     if (isset($form_state['values']['autoboot'])) {
         $jail->autoboot = TRUE;
+        $dirty = TRUE;
+    }
+
+    if ($form_state['values']['hostname'] != $jail->hostname) {
+        $jail->hostname = $form_state['values']['hostname'];
         $dirty = TRUE;
     }
 

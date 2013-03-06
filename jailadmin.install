@@ -19,6 +19,11 @@ function jailadmin_schema() {
                 'not null' => TRUE,
                 'default' => 0,
             ),
+            'hostname' => array(
+                'type' => 'varchar',
+                'length' => 253,
+                'not null' => TRUE,
+            ),
         ),
         'primary key' => array('name'),
     );
@@ -350,4 +355,17 @@ function jailadmin_update_7006() {
     );
 
     db_add_field('jailadmin_jails', 'autoboot', $spec);
+}
+
+/**
+ * Properly set the hostname
+ */
+function jailadmin_update_7007() {
+    $spec = array(
+        'type' => 'varchar',
+        'length' => 253,
+        'not null' => TRUE,
+    );
+
+    db_add_field('jailadmin_jails', 'hostname', $spec);
 }

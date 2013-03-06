@@ -9,6 +9,7 @@ class Jail {
     public $services;
     public $mounts;
     public $autoboot;
+    public $hostname;
     private $_snapshots;
 
     function __construct() {
@@ -42,6 +43,7 @@ class Jail {
         $jail->name = $record['name'];
         $jail->dataset = $record['dataset'];
         $jail->autoboot = ($record['autoboot'] == 1);
+        $jail->hostname = $record['hostname'];
         $jail->network = NetworkDevice::Load($jail);
         $jail->services = Service::Load($jail);
         $jail->mounts = Mount::Load($jail);
@@ -154,8 +156,10 @@ class Jail {
             if ($this->Stop() == FALSE)
                 return FALSE;
 
+        $hostname = (strlen($this->hostname) == 0) ? $this->name : $this->hostname;
+
         exec("/usr/local/bin/sudo /sbin/mount -t devfs devfs {$this->path}/dev");
-        exec("/usr/local/bin/sudo /usr/sbin/jail -c vnet 'name={$this->name}' 'host.hostname={$this->name}' 'path={$this->path}' persist");
+        exec("/usr/local/bin/sudo /usr/sbin/jail -c vnet 'name={$this->name}' 'host.hostname={$hostname}' 'path={$this->path}' persist");
 
         foreach ($this->network as $n)
             $n->BringHostOnline();
@@ -255,6 +259,7 @@ class Jail {
             ->fields(array(
                 'name' => $this->name,
                 'dataset' => $this->dataset,
+                'hostname' => $this->hostname,
             ))->execute();
     }
 
@@ -285,6 +290,7 @@ class Jail {
             ->fields(array(
                 'dataset' => $this->dataset,
                 'autoboot' => ($this->autoboot ? 1 : 0),
+                'hostname' => $this->hostname,
             ))
             ->condition('name', $this->name)
             ->execute();
