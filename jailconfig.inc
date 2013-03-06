@@ -51,6 +51,14 @@ function jailadmin_config($form, &$form_state) {
         '#markup' => $jail->path,
     );
 
+    $form['base']['autoboot'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Autoboot'),
+        '#description' => t('Start jail at boot?'),
+        '#default_value' => $jail->autoboot,
+        '#disabled' => $jail->IsOnline() || $readonly,
+    );
+
     $form['network_devices'] = array(
         '#type' => 'fieldset',
         '#title' => t('Network Devices'),
@@ -303,6 +311,11 @@ function jailadmin_config_submit($form, &$form_state) {
         drupal_set_message(t('Access denied'), 'error');
         $form_state['rebuild'] = TRUE;
         return;
+    }
+
+    if (isset($form_state['values']['autoboot'])) {
+        $jail->autoboot = TRUE;
+        $dirty = TRUE;
     }
 
     if (isset($form_state['values']['route']) && strcmp($jail->route, $form_state['values']['route'])) {

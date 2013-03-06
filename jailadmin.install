@@ -14,6 +14,11 @@ function jailadmin_schema() {
                 'length' => 500,
                 'not null' => TRUE,
             ),
+            'autoboot' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0,
+            ),
         ),
         'primary key' => array('name'),
     );
@@ -332,4 +337,17 @@ function jailadmin_update_7005() {
     );
 
     db_add_field('jailadmin_epairs', 'dhcp', $spec);
+}
+
+/**
+ * Add support for autobooting jails via jail daemon
+ */
+function jailadmin_update_7006() {
+    $spec = array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+    );
+
+    db_add_field('jailadmin_jails', 'autoboot', $spec);
 }

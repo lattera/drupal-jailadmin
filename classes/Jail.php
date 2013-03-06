@@ -8,6 +8,7 @@ class Jail {
     public $network;
     public $services;
     public $mounts;
+    public $autoboot;
     private $_snapshots;
 
     function __construct() {
@@ -40,6 +41,7 @@ class Jail {
         $jail = new Jail;
         $jail->name = $record['name'];
         $jail->dataset = $record['dataset'];
+        $jail->autoboot = ($record['autoboot'] == 1);
         $jail->network = NetworkDevice::Load($jail);
         $jail->services = Service::Load($jail);
         $jail->mounts = Mount::Load($jail);
@@ -282,6 +284,7 @@ class Jail {
         db_update('jailadmin_jails')
             ->fields(array(
                 'dataset' => $this->dataset,
+                'autoboot' => ($this->autoboot ? 1 : 0),
             ))
             ->condition('name', $this->name)
             ->execute();
