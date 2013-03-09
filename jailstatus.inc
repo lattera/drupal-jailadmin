@@ -10,7 +10,7 @@ require_once('classes/Jail.php');
 function jailadmin_status($form, &$form_state) {
     $jails = Jail::LoadAll();
 
-    $header = array('Jail Name', 'Status', 'Network Status', 'Actions');
+    $header = array('Jail Name', 'Hostname', 'Status', 'Network Status', 'Actions');
     $rows = array();
     foreach ($jails as $jail) {
         if (user_access('config ' . $jail->name) || user_access('view ' . $jail->name . ' config'))
@@ -34,7 +34,8 @@ function jailadmin_status($form, &$form_state) {
                 . " | {$network}";
         }
 
-        $rows[] = array($name, $jail->IsOnlineString(), $jail->NetworkStatus(),  $action);
+        $hostname = (strlen($jail->hostname)) ? $jail->hostname : $jail->name;
+        $rows[] = array($name, $hostname, $jail->IsOnlineString(), $jail->NetworkStatus(),  $action);
     }
 
     $form['jails'] = array(
