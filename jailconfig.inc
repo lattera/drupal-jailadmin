@@ -231,6 +231,60 @@ function jailadmin_config($form, &$form_state) {
         '#disabled' => $jail->IsOnline() || $readonly,
     );
 
+    if (count($jail->BEs)) {
+        $form['boot_environments'] = array(
+            '#type' => 'fieldset',
+            '#title' => t('Boot Environments'),
+            '#collapsible' => TRUE,
+            '#collapsed' => TRUE,
+        );
+
+        $boot_env = array();
+        foreach ($jail->BEs as $be)
+            $boot_env[$be["pretty_dataset"]] = $be["pretty_dataset"] . ($be["active"] ? " (active)" : "");
+
+        $form['boot_environments']['existing_boot_environments'] = array(
+            '#type' => 'select',
+            '#title' => t('Existing Boot Environments'),
+            '#multiple' => TRUE,
+            '#options' => $boot_env,
+            '#disabled' => $readonly,
+        );
+
+        $form['boot_environments']['new_boot_environment_name'] = array(
+            '#type' => 'textfield',
+            '#title' => t('New BE Name'),
+            '#size' => 60,
+            '#disabled' => $readonly,
+        );
+
+        $form['boot_environments']['new_help'] = array(
+            '#type' => 'item',
+            '#markup' => t('To use a different BE than the currently-active BE as a base, select that BE from the list'),
+        );
+
+        $form['boot_environments']['create_boot_environment'] = array(
+            '#type' => 'submit',
+            '#value' => t('Create BE'),
+            '#submit' => array('create_boot_environment'),
+            '#disabled' => $readonly,
+        );
+
+        $form['boot_environments']['activate_boot_environment'] = array(
+            '#type' => 'submit',
+            '#value' => t('Activate BE'),
+            '#submit' => array('activate_boot_environment'),
+            '#disabled' => $jail->IsOnline() || $readonly,
+        );
+
+        $form['boot_environments']['delete_boot_environment'] = array(
+            '#type' => 'submit',
+            '#value' => t('Delete BEs'),
+            '#submit' => array('delete_boot_environment'),
+            '#disabled' => $readonly,
+        );
+    }
+
     if (count($jail->GetSnapshots())) {
         $form['snapshots'] = array(
             '#type' => 'fieldset',
@@ -322,8 +376,11 @@ function jailadmin_config_submit($form, &$form_state) {
     }
 
     if (isset($form_state['values']['autoboot'])) {
-        $jail->autoboot = TRUE;
-        $dirty = TRUE;
+        $autoboot = $jail->autoboot;
+        $jail->autoboot = ($form_state['values']['autoboot'] == 1);
+
+        if ($autoboot != $jail->autoboot)
+            $dirty = TRUE;
     }
 
     if ($form_state['values']['hostname'] != $jail->hostname) {
@@ -555,7 +612,7 @@ function jail_actions_snapshot($form, &$form_state) {
         return;
     }
 
-    if ($jail->Snapshot())
+    if ($jail->Snapshot() !== FALSE)
         drupal_set_message(t('Jail @jail snapshot successful', array('@jail' => $jail->name)));
     else
         drupal_set_message(t('Jail @jail snapshot unsuccessful', array('@jail' => $jail->name)));
@@ -578,4 +635,78 @@ function jail_actions_upgrade($form, &$form_state) {
         drupal_set_message(t('Jail @jail upgraded unsuccessfully', array('@jail' => $jail->name)));
 
     $form_state['rebuild'] = TRUE;
+}
+
+function create_boot_environment($form, &$form_state) {
+    $jail = Jail::Load($form_state['build_info']['args'][0]);
+    $base = "";
+
+    if (user_access("config {$jail->name}") == FALSE) {
+        drupal_set_message(t("Access Denied"), "error");
+        $form_state["rebuild"] = TRUE;
+        return;
+    }
+
+    if (isset($form_state['values']['existing_boot_environments'])) {
+        foreach(array_filter($form_state['values']['existing_boot_environments']) as $base) {
+            break;
+        }
+    }
+
+    if (!isset($form_state['values']['new_boot_environment_name']) || !strlen($form_state['values']['new_boot_environment_name'])) {
+        drupal_set_message(t('Please fill out the new BE\'s name'), "error");
+        $form['boot_environments']['#collapsed'] = FALSE;
+        $form_state["rebuild"] = TRUE;
+        return;
+    }
+    $bename = $form_state['values']['new_boot_environment_name'];
+
+    $jail->CreateNewBE($bename, $base);
+
+    $form_state['input']['new_boot_environment_name'] = '';
+    $form_state['input']['existing_boot_environments'] = '';
+
+    $form_state['rebuild'] = TRUE;
+
+    drupal_set_message(t('New BE @be created successfully', array('@be' => $bename)));
+}
+
+function delete_boot_environment($form, &$form_state) {
+    $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if (user_access("config {$jail->name}") == FALSE) {
+        drupal_set_message(t("Access Denied"), "error");
+        $form_state['rebuild'] = TRUE;
+        return;
+    }
+
+    if (isset($form_state['values']['existing_boot_environments'])) {
+        foreach (array_filter($form_state['values']['existing_boot_environments']) as $name) {
+            if ($jail->DeleteBE($name) == FALSE) {
+                drupal_set_message(t("Could not delete BE @be", array("@be" => $name)));
+            }
+        }
+    }
+
+    $form_state['rebuild'] = TRUE;
+}
+
+function activate_boot_environment($form, &$form_state) {
+    $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if (user_access("config {$jail->name}") == FALSE) {
+        drupal_set_message(t("Access Denied"), "error");
+        $form_state['rebuild'] = TRUE;
+        return;
+    }
+
+    if (isset($form_state['values']['existing_boot_environments'])) {
+        foreach (array_filter($form_state['values']['existing_boot_environments']) as $name) {
+            if ($jail->ActivateBE($name) == FALSE) {
+                drupal_set_message(t("Failed to activate BE @be", array("@be" => $name)), "error");
+            } else {
+                drupal_set_message(t("BE @be successfully activated", array("@be" => $name)));
+            }
+        }
+    }
 }

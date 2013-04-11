@@ -88,6 +88,11 @@ function jailadmin_admin_settings($form, &$form_state) {
         '#size' => 30,
     );
 
+    $form['new_jail']['new_use_be'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Use Boot Environments (BEs)'),
+    );
+
     if (count($templates)) {
         $form['new_jail']['new_template'] = array(
             '#type' => 'select',
@@ -129,6 +134,7 @@ function jailadmin_admin_settings_submit($form, &$form_state) {
     }
 
     if (isset($form_state['values']['new_name']) && strlen($form_state['values']['new_name'])) {
+        $usebe = FALSE;
         $template = '';
         $name = $form_state['values']['new_name'];
         $dataset = $form_state['values']['new_dataset'];
@@ -137,12 +143,15 @@ function jailadmin_admin_settings_submit($form, &$form_state) {
         if (isset($form_state['values']['new_template']) && strlen($form_state['values']['new_template']))
             $template = $form_state['values']['new_template'];
 
+        if (isset($form_state['values']['new_use_be']) && $form_state['values']['new_use_be'] == 1)
+            $usebe = TRUE;
+
         $j = new Jail;
         $j->name = $name;
         $j->dataset = $dataset;
         $j->hostname = $hostname;
 
-        $j->Create($template);
+        $j->Create($template, $usebe);
 
         $form_state['input']['new_name'] = '';
         $form_state['input']['new_dataset'] = '';

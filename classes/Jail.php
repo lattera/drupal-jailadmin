@@ -10,12 +10,14 @@ class Jail {
     public $mounts;
     public $autoboot;
     public $hostname;
+    public $BEs;
     private $_snapshots;
 
     function __construct() {
         $this->network = array();
         $this->services = array();
         $this->_snapshots = array();
+        $this->BEs = array();
     }
 
     public static function LoadAll() {
@@ -62,13 +64,84 @@ class Jail {
             $jail->routes[] = $arr;
         }
 
-        $jail->path = exec("/sbin/zfs get -H -o value mountpoint {$jail->dataset}");
+        $jail->load_boot_environments();
+
+        if (count($jail->BEs)) {
+            $jail->path = $jail->GetActiveBE()["mountpoint"];
+        } else {
+            $jail->path = trim(exec("/sbin/zfs get -H -o value mountpoint {$jail->dataset}"));
+        }
 
         return $jail;
     }
 
+    protected function load_boot_environments() {
+        $this->BEs = array();
+
+        $dspec = array(
+            0 => array("pipe", "r"),
+            1 => array("pipe", "w"),
+            2 => array("pipe", "w")
+        );
+
+        $proc = proc_open("/sbin/zfs list -H -oname -r -t filesystem {$this->dataset}", $dspec, $pipes);
+        if (!is_resource($proc))
+            return FALSE;
+
+        $datasets = stream_get_contents($pipes[1]);
+
+        proc_close($proc);
+
+        $datasets = explode("\n", trim($datasets));
+
+        /* If we have less than three datasets, we're not using BEs */
+        if (count($datasets) < 3)
+            return;
+
+        $i=0;
+        foreach ($datasets as $dataset) {
+            if ($i < 2) {
+                /* Ignore the first two entries. They're the parent datasets */
+                $i++;
+                continue;
+            }
+
+            $active = false;
+
+            $prop = trim(exec("/sbin/zfs get -H -o value jailadmin:be_active {$dataset}"));
+            if ($prop == "true")
+                $active = true;
+
+            $mountpoint=trim(exec("/sbin/zfs get -H -o value mountpoint {$dataset}"));
+            $pretty = substr($dataset, strrpos($dataset, "/")+1);
+
+            $this->BEs[] = array(
+                "dataset" => $dataset,
+                "mountpoint" => $mountpoint,
+                "pretty_dataset" => $pretty,
+                "active" => $active,
+            );
+        }
+    }
+
     private function load_snapshots() {
-        exec("/sbin/zfs list -rH -oname -t snapshot {$this->dataset}", $this->_snapshots);
+        if (count($this->BEs)) {
+            foreach ($this->BEs as $be) {
+                $snapshots = array();
+                exec("/sbin/zfs list -rH -oname -t snapshot {$be["dataset"]}", $snapshots);
+                foreach ($snapshots as $snapshot) {
+                    $snapshot = trim($snapshot);
+                    $this->_snapshots[] = substr($snapshot, strrpos($snapshot, "/")+1);
+                }
+            }
+        } else {
+            $snapshots = array();
+            exec("/sbin/zfs list -rH -oname -t snapshot {$this->dataset}", $snapshots);
+            foreach ($snapshots as $snapshot) {
+                $snapshot = trim($snapshot);
+                $this->_snapshots[] = substr($snapshot, strrpos($snapshot, "@")+1);
+            }
+        }
     }
 
     public function GetSnapshots() {
@@ -81,19 +154,35 @@ class Jail {
     }
 
     public function RevertSnapshot($snapshot) {
-        exec("/usr/local/bin/sudo /sbin/zfs rollback -rf \"{$snapshot}\"");
+        $snap = $this->ResolveSnapshot($snapshot);
+        exec("/usr/local/bin/sudo /sbin/zfs rollback -rf \"{$snap}\"");
 
         return TRUE;
     }
 
+    public function ResolveSnapshot($snapshot) {
+        $bename = explode("@", $snapshot);
+        if (count($this->BEs)) {
+            foreach ($this->BEs as $be) {
+                if ($be["pretty_dataset"] == $bename[0]) {
+                    return $be["dataset"] . "@" . $bename[1];
+                }
+            }
+        } else {
+            return $this->dataset . "@" . $snapshot;
+        }
+    }
+
     public function CreateTemplateFromSnapshot($snapshot, $name='') {
+        $snap = $this->ResolveSnapshot($snapshot);
+
         if ($name == '')
-            $name = $snapshot;
+            $name = $snap;
 
         db_insert('jailadmin_templates')
             ->fields(array(
                 'name' => $name,
-                'snapshot' => $snapshot,
+                'snapshot' => $snap,
             ))
             ->execute();
 
@@ -101,7 +190,8 @@ class Jail {
     }
 
     public function DeleteSnapshot($snapshot) {
-        exec("/usr/local/bin/sudo /sbin/zfs destroy -rf \"{$snapshot}\"");
+        $snap = $this->ResolveSnapshot($snapshot);
+        exec("/usr/local/bin/sudo /sbin/zfs destroy -rf \"{$snap}\"");
 
         return true;
     }
@@ -219,12 +309,39 @@ class Jail {
         return TRUE;
     }
 
-    public function Snapshot() {
+    public function GetActiveBE() {
+        foreach ($this->BEs as $be)
+            if ($be["active"])
+                return $be;
+
+        return FALSE;
+    }
+
+    public function Snapshot($base = '') {
         $date = strftime("%F_%T");
+        $dataset = $this->dataset;
 
-        exec("/usr/local/bin/sudo /sbin/zfs snapshot {$this->dataset}@{$date}");
+        if (strlen($base)) {
+            foreach ($this->BEs as $be) {
+                if ($be["pretty_dataset"] == $base) {
+                    $dataset = $be["dataset"];
+                    break;
+                }
+            }
+        } else {
+            if (count($this->BEs)) {
+                foreach ($this->BEs as $be) {
+                    if ($be["active"]) {
+                        $dataset = $be["dataset"];
+                        break;
+                    }
+                }
+            }
+        }
 
-        return TRUE;
+        exec("/usr/local/bin/sudo /sbin/zfs snapshot {$dataset}@{$date}");
+
+        return "{$dataset}@{$date}";
     }
 
     public function UpgradeWorld() {
@@ -241,6 +358,43 @@ class Jail {
         return TRUE;
     }
 
+    public function CreateNewBE($name, $base='') {
+        $snap = $this->Snapshot($base);
+        $oldbe = array();
+
+        exec("/usr/local/bin/sudo /sbin/zfs clone -o jailadmin:be_active=false {$snap} {$this->dataset}/ROOT/{$name}");
+
+        return TRUE;
+    }
+
+    public function ActivateBE($name) {
+        if ($this->IsOnline())
+            return FALSE;
+
+        $oldbe = $this->GetActiveBE();
+
+        exec("/usr/local/bin/sudo /sbin/zfs set jailadmin:be_active=false {$oldbe["dataset"]}");
+        exec("/usr/local/bin/sudo /sbin/zfs promote {$this->dataset}/ROOT/{$name}");
+        exec("/usr/local/bin/sudo /sbin/zfs set jailadmin:be_active=true {$this->dataset}/ROOT/{$name}");
+
+        $this->load_boot_environments();
+        $this->path = $this->GetActiveBE()["mountpoint"];
+
+        return TRUE;
+    }
+
+    public function DeleteBE($name) {
+        foreach ($this->BEs as $be) {
+            if ($be["pretty_dataset"] == $name) {
+                if ($be["active"])
+                    return FALSE;
+
+                exec("/usr/local/bin/sudo /sbin/zfs destroy -r {$be["dataset"]}");
+                return TRUE;
+            }
+        }
+    }
+
     public function SetupServices() {
         if (count($this->network)) {
             $ip = Network::SanitizedIP($this->network[0]->ip);
@@ -249,10 +403,22 @@ class Jail {
         }
     }
 
-    public function Create($template='') {
+    public function Create($template='', $usebe=FALSE) {
+        $dataset = $this->dataset;
+        $opts = "";
+
         if (strlen($template)) {
             /* If $template is set, we need to create this jail */
-            exec("/usr/local/bin/sudo zfs clone {$template} {$this->dataset}");
+
+            if ($usebe) {
+                exec("/usr/local/bin/sudo /sbin/zfs create -omountpoint=none {$this->dataset}");
+                exec("/usr/local/bin/sudo /sbin/zfs create -omountpoint=none {$this->dataset}/ROOT");
+                $dataset .= "/ROOT/base";
+
+                $opts = "-o jailadmin:be_active=true";
+            }
+
+            exec("/usr/local/bin/sudo zfs clone {$opts} {$template} {$dataset}");
         }
 
         db_insert('jailadmin_jails')
@@ -282,7 +448,7 @@ class Jail {
             ->execute();
 
         if ($destroy)
-            exec("/usr/local/bin/sudo /sbin/zfs destroy {$this->dataset}");
+            exec("/usr/local/bin/sudo /sbin/zfs destroy -r {$this->dataset}");
     }
 
     public function Persist() {

@@ -1,4 +1,4 @@
-drual-jailadmin
+drupal-jailadmin
 ===============
 
 A Drupal 7 module to make administration of FreeBSD vnet jails easy.
@@ -6,7 +6,7 @@ A Drupal 7 module to make administration of FreeBSD vnet jails easy.
 Requirements
 ============
 
-* Sudo
+* security/sudo
     - Your webserver user will need passwordless root-level access to the following commands: /sbin/zfs, /sbin/mount, /sbin/umount, /sbin/ifconfig, /usr/sbin/jail, /usr/sbin/jexec, /usr/sbin/jls, /bin/sh, /usr/bin/make
       (sh is for setting up config files inside the jail, make is for running `make installworld`)
 

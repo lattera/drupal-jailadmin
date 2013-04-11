@@ -103,7 +103,7 @@ function jail_snapshot($form, &$form_state) {
         return;
     }
 
-    if ($jail->Snapshot())
+    if ($jail->Snapshot() !== FALSE)
         drupal_set_message(t('Jail @jail snapshot successful', array('@jail' => $jail->name)));
     else
         drupal_set_message(t('Jail @jail snapshot unsuccessful', array('@jail' => $jail->name)));
