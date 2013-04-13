@@ -231,7 +231,7 @@ function jailadmin_config($form, &$form_state) {
         '#disabled' => $jail->IsOnline() || $readonly,
     );
 
-    if (count($jail->BEs)) {
+    if ($jail->HasBEs) {
         $form['boot_environments'] = array(
             '#type' => 'fieldset',
             '#title' => t('Boot Environments'),

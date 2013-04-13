@@ -11,6 +11,7 @@ class Jail {
     public $autoboot;
     public $hostname;
     public $BEs;
+    public $HasBEs;
     private $_snapshots;
 
     function __construct() {
@@ -84,7 +85,7 @@ class Jail {
             2 => array("pipe", "w")
         );
 
-        $proc = proc_open("/sbin/zfs list -H -oname -r -t filesystem {$this->dataset}", $dspec, $pipes);
+        $proc = proc_open("/sbin/zfs list -H -oname -r -t filesystem {$this->dataset}/ROOT", $dspec, $pipes);
         if (!is_resource($proc))
             return FALSE;
 
@@ -95,13 +96,15 @@ class Jail {
         $datasets = explode("\n", trim($datasets));
 
         /* If we have less than three datasets, we're not using BEs */
-        if (count($datasets) < 3)
+        if (count($datasets) < 2)
             return;
+
+        $this->HasBEs = true;
 
         $i=0;
         foreach ($datasets as $dataset) {
-            if ($i < 2) {
-                /* Ignore the first two entries. They're the parent datasets */
+            if ($i < 1) {
+                /* Ignore the first entry. It's the parent dataset. */
                 $i++;
                 continue;
             }
@@ -125,7 +128,7 @@ class Jail {
     }
 
     private function load_snapshots() {
-        if (count($this->BEs)) {
+        if ($this->HasBEs) {
             foreach ($this->BEs as $be) {
                 $snapshots = array();
                 exec("/sbin/zfs list -rH -oname -t snapshot {$be["dataset"]}", $snapshots);
@@ -162,7 +165,7 @@ class Jail {
 
     public function ResolveSnapshot($snapshot) {
         $bename = explode("@", $snapshot);
-        if (count($this->BEs)) {
+        if ($this->HasBEs) {
             foreach ($this->BEs as $be) {
                 if ($be["pretty_dataset"] == $bename[0]) {
                     return $be["dataset"] . "@" . $bename[1];
@@ -329,7 +332,7 @@ class Jail {
                 }
             }
         } else {
-            if (count($this->BEs)) {
+            if ($this->HasBEs) {
                 foreach ($this->BEs as $be) {
                     if ($be["active"]) {
                         $dataset = $be["dataset"];
