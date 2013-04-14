@@ -274,8 +274,17 @@ function jailadmin_config($form, &$form_state) {
             '#type' => 'submit',
             '#value' => t('Activate BE'),
             '#submit' => array('activate_boot_environment'),
-            '#disabled' => $jail->IsOnline() || $readonly,
+            '#disabled' => $jail->IsOnline() || $readonly || $jail->MultipleActiveBEs,
         );
+
+        if ($jail->MultipleActiveBEs) {
+            $form['boot_environments']['deactivate_boot_environment'] = array(
+                '#type' => 'submit',
+                '#value' => t('Deactivate BE'),
+                '#submit' => array('deactivate_boot_environment'),
+                '#disabled' => $jail->IsOnline() || $readonly,
+            );
+        }
 
         $form['boot_environments']['delete_boot_environment'] = array(
             '#type' => 'submit',
@@ -332,34 +341,34 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'submit',
         '#value' => t('Start Jail'),
         '#submit' => array('jail_actions_start'),
-        '#disabled' => $jail->IsOnline() || $readonly || (user_access("start jails") == FALSE),
+        '#disabled' => $jail->IsOnline() || $readonly || (user_access("start jails") == FALSE) || $jail->MultipleActiveBEs,
     );
 
     $form['jail_actions']['stop'] = array(
         '#type' => 'submit',
         '#value' => t('Stop Jail'),
         '#submit' => array('jail_actions_stop'),
-        '#disabled' => !$jail->IsOnline() || $readonly || (user_access("start jails") == FALSE),
+        '#disabled' => !$jail->IsOnline() || $readonly || (user_access("start jails") == FALSE) || $jail->MultipleActiveBEs,
     );
 
     $form['jail_actions']['snapshot'] = array(
         '#type' => 'submit',
         '#value' => t('Snapshot'),
         '#submit' => array('jail_actions_snapshot'),
-        '#disabled' => $readonly,
+        '#disabled' => $readonly || $jail->MultipleActiveBEs,
     );
 
     $form['jail_actions']['upgrade'] = array(
         '#type' => 'submit',
         '#value' => t('Upgrade World'),
         '#submit' => array('jail_actions_upgrade'),
-        '#disabled' => $jail->IsOnline() || $readonly,
+        '#disabled' => $jail->IsOnline() || $readonly || $jail->MultipleActiveBEs,
     );
 
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Save Configuration'),
-        '#disabled' => $jail->IsOnline() || $readonly,
+        '#disabled' => $jail->IsOnline() || $readonly || $jail->MultipleActiveBEs,
     );
 
     return $form;
@@ -517,6 +526,10 @@ function create_template($form, &$form_state) {
     if (isset($form_state['values']['existing_snapshots'])) {
         foreach (array_filter($form_state['values']['existing_snapshots']) as $snapshot) {
             $jail->CreateTemplateFromSnapshot($snapshot);
+
+            if ($jail->HasBEs)
+                $snapshot = $jail->GetActiveBE()["dataset"] . "ROOT/{$snapshot}";
+
             drupal_set_message(t('Created template named "@snapshot"', array('@snapshot' => $snapshot)));
         }
     }
@@ -706,6 +719,26 @@ function activate_boot_environment($form, &$form_state) {
                 drupal_set_message(t("Failed to activate BE @be", array("@be" => $name)), "error");
             } else {
                 drupal_set_message(t("BE @be successfully activated", array("@be" => $name)));
+            }
+        }
+    }
+}
+
+function deactivate_boot_environment($form, &$form_state) {
+    $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if (user_access("config {$jail->name}") == FALSE) {
+        drupal_set_message(t('Access Denied'), 'error');
+        $form_state['rebuild'] = TRUE;
+        return;
+    }
+
+    if (isset($form_state['values']['existing_boot_environments'])) {
+        foreach (array_filter($form_state['values']['existing_boot_environments']) as $name) {
+            $be = $jail->ResolveBE($name);
+
+            if ($be !== FALSE && $be["active"]) {
+                $jail->DeactivateBE($name);
             }
         }
     }

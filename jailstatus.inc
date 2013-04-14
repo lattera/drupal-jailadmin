@@ -13,25 +13,30 @@ function jailadmin_status($form, &$form_state) {
     $header = array('Jail Name', 'Hostname', 'Status', 'Network Status', 'Actions');
     $rows = array();
     foreach ($jails as $jail) {
+        $action = "";
+
         if (user_access('config ' . $jail->name) || user_access('view ' . $jail->name . ' config'))
             $name = l(t($jail->name), 'jailadmin/' . $jail->name . '/config');
         else
             $name = t('@name', array('@name' => $jail->name));
 
-        $action = "";
-        if (user_access("start jails")) {
-            if ($jail->IsOnline())
-                $action = l("Stop", "jailadmin/{$jail->name}/stop");
-            else
-                $action = l("Start", "jailadmin/{$jail->name}/start");
-        }
+        if ($jail->MultipleActiveBEs) {
+            $action = "Unavailable: Multiple active BEs";
+        } else {
+            if (user_access("start jails")) {
+                if ($jail->IsOnline())
+                    $action = l("Stop", "jailadmin/{$jail->name}/stop");
+                else
+                    $action = l("Start", "jailadmin/{$jail->name}/start");
+            }
 
-        if (user_access("config {$jail->name}")) {
-            $network = l(t("Network Settings"), "jailadmin/{$jail->name}/network");
+            if (user_access("config {$jail->name}")) {
+                $network = l(t("Network Settings"), "jailadmin/{$jail->name}/network");
 
-            $action .= (strlen($action) ? " | " : "")
-                . l("Snapshot", "jailadmin/{$jail->name}/snapshot")
-                . " | {$network}";
+                $action .= (strlen($action) ? " | " : "")
+                    . l("Snapshot", "jailadmin/{$jail->name}/snapshot")
+                    . " | {$network}";
+            }
         }
 
         $hostname = (strlen($jail->hostname)) ? $jail->hostname : $jail->name;
