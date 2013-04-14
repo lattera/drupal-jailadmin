@@ -260,7 +260,7 @@ function jailadmin_config($form, &$form_state) {
 
         $form['boot_environments']['new_help'] = array(
             '#type' => 'item',
-            '#markup' => t('To use a different BE than the currently-active BE as a base, select that BE from the list'),
+            '#markup' => t('To use a different BE than the currently-active BE as a base, select that BE from the list.'),
         );
 
         $form['boot_environments']['create_boot_environment'] = array(
@@ -341,7 +341,7 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'submit',
         '#value' => t('Start Jail'),
         '#submit' => array('jail_actions_start'),
-        '#disabled' => $jail->IsOnline() || $readonly || (user_access("start jails") == FALSE) || $jail->MultipleActiveBEs,
+        '#disabled' => $jail->IsOnline() || $readonly || (user_access("start jails") == FALSE) || $jail->MultipleActiveBEs || $jail->ZeroActiveBEs,
     );
 
     $form['jail_actions']['stop'] = array(
@@ -628,7 +628,7 @@ function jail_actions_snapshot($form, &$form_state) {
     if ($jail->Snapshot() !== FALSE)
         drupal_set_message(t('Jail @jail snapshot successful', array('@jail' => $jail->name)));
     else
-        drupal_set_message(t('Jail @jail snapshot unsuccessful', array('@jail' => $jail->name)));
+        drupal_set_message(t('Jail @jail snapshot unsuccessful', array('@jail' => $jail->name)), "error");
 
     $form_state['rebuild'] = TRUE;
 }
@@ -696,7 +696,7 @@ function delete_boot_environment($form, &$form_state) {
     if (isset($form_state['values']['existing_boot_environments'])) {
         foreach (array_filter($form_state['values']['existing_boot_environments']) as $name) {
             if ($jail->DeleteBE($name) == FALSE) {
-                drupal_set_message(t("Could not delete BE @be", array("@be" => $name)));
+                drupal_set_message(t("Could not delete BE @be", array("@be" => $name)), "error");
             }
         }
     }

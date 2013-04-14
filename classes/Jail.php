@@ -13,6 +13,7 @@ class Jail {
     public $BEs;
     public $HasBEs;
     public $MultipleActiveBEs;
+    public $ZeroActiveBEs;
     private $_snapshots;
 
     function __construct() {
@@ -20,7 +21,8 @@ class Jail {
         $this->services = array();
         $this->_snapshots = array();
         $this->BEs = array();
-        $this->MultipleActiveBEs = false;
+        $this->MultipleActiveBEs = FALSE;
+        $this->ZeroActiveBEs = TRUE;
     }
 
     public static function LoadAll() {
@@ -69,7 +71,7 @@ class Jail {
 
         $jail->load_boot_environments();
 
-        if (count($jail->BEs)) {
+        if ($jail->HasBEs) {
             $be = $jail->GetActiveBE();
 
             if ($be !== FALSE)
@@ -107,7 +109,6 @@ class Jail {
         $this->HasBEs = true;
 
         $i=0;
-        $setactive = false;
         foreach ($datasets as $dataset) {
             if ($i < 1) {
                 /* Ignore the first entry. It's the parent dataset. */
@@ -115,17 +116,19 @@ class Jail {
                 continue;
             }
 
-            $active = false;
+            $active = FALSE;
 
             $prop = trim(exec("/sbin/zfs get -H -o value jailadmin:be_active {$dataset}"));
             if ($prop == "true") {
-                if ($setactive) {
+                if (!($this->ZeroActiveBEs)) {
                     if (!($this->MultipleActiveBEs))
                         drupal_set_message(t('Warning: Jail @jail has multiple active BEs. Please fix manually.', array('@jail' => $this->name)), 'warning');
 
-                    $this->MultipleActiveBEs = true;
+                    $this->MultipleActiveBEs = TRUE;
+                } else {
+                    $this->ZeroActiveBEs = FALSE;
                 }
-                $active = $setactive = true;
+                $active = TRUE;
             }
 
             $mountpoint=trim(exec("/sbin/zfs get -H -o value mountpoint {$dataset}"));
@@ -140,7 +143,11 @@ class Jail {
         }
 
         /* Do some sanity checking */
-        if ($this->MultipleActiveBEs && $this->GetActiveBE() !== FALSE)
+        if ($this->ZeroActiveBEs) {
+            drupal_set_message(t('Warning: Jail @jail has zero active BEs. Please fix manually.', array('@jail' => $this->name)), 'warning');
+            if ($this->GetActiveBE() !== FALSE)
+                $this->ZeroActiveBEs = FALSE;
+        } else if ($this->MultipleActiveBEs && $this->GetActiveBE() !== FALSE)
             $this->MultipleActiveBEs = FALSE;
     }
 
@@ -336,7 +343,7 @@ class Jail {
     }
 
     public function GetActiveBE() {
-        if ($this->MultipleActiveBEs) {
+        if ($this->MultipleActiveBEs || $this->ZeroActiveBEs) {
             /* If the jail is online, then its path has already been set. Make a best guess effort. */
             if (!($this->IsOnline()))
                 return FALSE;
@@ -347,8 +354,7 @@ class Jail {
 
             $o = substr($o, strpos($o, "=")+1);
             foreach ($this->BEs as $be) {
-                $path = trim(exec("/sbin/zfs get -H -o value mountpoint \"{$be["dataset"]}\""));
-                if ($path == $o)
+                if (trim($be["mountpoint"]) == $o)
                     return $be;
             }
 
@@ -366,8 +372,9 @@ class Jail {
         $date = strftime("%F_%T");
         $dataset = $this->dataset;
 
-        if ($this->MultipleActiveBEs)
-            return FALSE;
+        if ($this->HasBEs)
+            if ($this->MultipleActiveBEs || $this->ZeroActiveBEs)
+                return FALSE;
 
         if (strlen($base)) {
             foreach ($this->BEs as $be) {
@@ -432,7 +439,9 @@ class Jail {
 
         $oldbe = $this->GetActiveBE();
 
-        exec("/usr/local/bin/sudo /sbin/zfs set jailadmin:be_active=false {$oldbe["dataset"]}");
+        if ($oldbe["active"])
+            exec("/usr/local/bin/sudo /sbin/zfs set jailadmin:be_active=false {$oldbe["dataset"]}");
+
         exec("/usr/local/bin/sudo /sbin/zfs promote {$this->dataset}/ROOT/{$name}");
         exec("/usr/local/bin/sudo /sbin/zfs set jailadmin:be_active=true {$this->dataset}/ROOT/{$name}");
 
@@ -443,14 +452,37 @@ class Jail {
     }
 
     public function DeactivateBE($name) {
+        if ($this->IsOnline()) {
+            $requested = $this->ResolveBE($name);
+            if ($requested !== FALSE && $this->path == $requested["mountpoint"])
+                if ($this->Stop() == FALSE) {
+                    drupal_set_message(t("Could not deactivate BE @be. Jail is online and cannot be shut down.", array("@be" => $name)), "error");
+                    return FALSE;
+                }
+        }
+
+        $count = 0;
+        foreach ($this->BEs as $be)
+            if ($be["active"])
+                $count++;
+
+        if ($count < 2) {
+            drupal_set_message(t("Cannot delete BE @be. You must have at least one active BE.", array("@be" => $name)));
+            return FALSE;
+        }
+
         exec("/usr/local/bin/sudo /sbin/zfs set jailadmin:be_active=false {$this->dataset}/ROOT/{$name}");
+
+        return TRUE;
     }
 
     public function DeleteBE($name) {
         foreach ($this->BEs as $be) {
             if ($be["pretty_dataset"] == $name) {
-                if ($be["active"])
+                if ($be["active"]) {
+                    drupal_set_message(t('Cannot delete BE @be. It is the active BE.', array('@be' => $name)), "error");
                     return FALSE;
+                }
 
                 exec("/usr/local/bin/sudo /sbin/zfs destroy -r {$be["dataset"]}");
                 return TRUE;
