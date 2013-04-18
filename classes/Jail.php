@@ -23,6 +23,7 @@ class Jail {
         $this->BEs = array();
         $this->MultipleActiveBEs = FALSE;
         $this->ZeroActiveBEs = TRUE;
+        $this->path = "";
     }
 
     public static function LoadAll() {
@@ -272,6 +273,12 @@ class Jail {
         if ($this->MultipleActiveBEs)
             return FALSE;
 
+        if ($this->HasBEs && $this->ZeroActiveBEs)
+            return FALSE;
+
+        if (!strlen($this->path))
+            return FALSE;
+
         if ($this->IsOnline())
             if ($this->Stop() == FALSE)
                 return FALSE;
@@ -401,6 +408,12 @@ class Jail {
 
     public function UpgradeWorld() {
         if ($this->MultipleActiveBEs)
+            return FALSE;
+
+        if ($this->HasBEs && $this->ZeroActiveBEs)
+            return FALSE;
+
+        if (!strlen($this->path))
             return FALSE;
 
         if ($this->IsOnline())

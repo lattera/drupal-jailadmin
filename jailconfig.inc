@@ -306,6 +306,7 @@ function jailadmin_config($form, &$form_state) {
             '#type' => 'select',
             '#multiple' => TRUE,
             '#title' => t('Existing snapshots'),
+            '#size' => (int)(count($jail->GetSnapshots())/3),
             '#options' => drupal_map_assoc($jail->GetSnapshots()),
             '#disabled' => $readonly,
         );
@@ -341,7 +342,7 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'submit',
         '#value' => t('Start Jail'),
         '#submit' => array('jail_actions_start'),
-        '#disabled' => $jail->IsOnline() || $readonly || (user_access("start jails") == FALSE) || $jail->MultipleActiveBEs || $jail->ZeroActiveBEs,
+        '#disabled' => $jail->IsOnline() || $readonly || (user_access("start jails") == FALSE) || $jail->MultipleActiveBEs || ($jail->ZeroActiveBEs && $jail->HasBEs)
     );
 
     $form['jail_actions']['stop'] = array(
@@ -362,7 +363,7 @@ function jailadmin_config($form, &$form_state) {
         '#type' => 'submit',
         '#value' => t('Upgrade World'),
         '#submit' => array('jail_actions_upgrade'),
-        '#disabled' => $jail->IsOnline() || $readonly || $jail->MultipleActiveBEs,
+        '#disabled' => $jail->IsOnline() || $readonly || $jail->MultipleActiveBEs || ($jail->ZeroActiveBEs && $jail->HasBEs),
     );
 
     $form['submit'] = array(
