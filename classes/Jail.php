@@ -519,8 +519,8 @@ class Jail {
             /* If $template is set, we need to create this jail */
 
             if ($usebe) {
-                exec("/usr/local/bin/sudo /sbin/zfs create -omountpoint=none {$this->dataset}");
-                exec("/usr/local/bin/sudo /sbin/zfs create -omountpoint=none {$this->dataset}/ROOT");
+                exec("/usr/local/bin/sudo /sbin/zfs create {$this->dataset}");
+                exec("/usr/local/bin/sudo /sbin/zfs create {$this->dataset}/ROOT");
                 $dataset .= "/ROOT/base";
 
                 $opts = "-o jailadmin:be_active=true";
