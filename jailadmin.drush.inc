@@ -27,6 +27,10 @@ function jailadmin_drush_command() {
             'description' => 'Autoboot the jails',
             'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN,
         ),
+        'stopall' => array(
+            'description' => 'Stop all jails',
+            'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN,
+        ),
     );
 }
 
@@ -68,4 +72,11 @@ function drush_jailadmin_stop($jailname='') {
     }
     
     $jail->Stop();
+}
+
+function drush_jailadmin_stopall() {
+    $jails = Jail::LoadAll();
+    foreach ($jails as $jail)
+        if ($jail->IsOnline())
+            $jail->Stop();
 }
