@@ -40,7 +40,7 @@ function drush_jailadmin_autoboot() {
     }
 }
 
-drush_jailadmin_start($jailname='') {
+function drush_jailadmin_start($jailname='') {
     if ($jailname == '') {
         drush_print("Please provide a jail name");
         return;
@@ -55,7 +55,7 @@ drush_jailadmin_start($jailname='') {
     $jail->Start();
 }
 
-drush_jailadmin_stop($jailname='') {
+function drush_jailadmin_stop($jailname='') {
     if ($jailname == '') {
         drush_print("Please provide a jail name");
         return;
