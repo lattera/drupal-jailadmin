@@ -100,6 +100,15 @@ function jailadmin_drush_command() {
             ),
             'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN,
         ),
+        'jail' => array(
+            'description' => 'Get/set jail settings',
+            'arguments' => array(
+                'jailname' => 'Name of the jail',
+                'variable' => 'Name of the variable to get or set',
+                'setting' => 'Optional value to set the variable to',
+            ),
+            'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN,
+        ),
     );
 }
 
@@ -331,4 +340,77 @@ function drush_jailadmin_deactivate_BE($jailname='', $bename='') {
     }
 
     $jail->DeactivateBE($bename);
+}
+
+function drush_jailadmin_jail($jailname='', $variable='', $setting='') {
+    if ($jailname == '') {
+        drush_print("Please provide a jail name");
+        return;
+    }
+
+    if ($variable == '') {
+        drush_print("Please provide the option to get/set");
+        return;
+    }
+
+    $jail = Jail::Load($jailname);
+    if ($jail === FALSE) {
+        drush_print("Jail not found");
+        return;
+    }
+
+    if ($setting != '')
+        return set_jail_var($jail, $variable, $setting);
+
+    switch ($variable) {
+        case "path":
+            drush_print("{$jail->path}");
+            break;
+        case "dataset":
+            drush_print("{$jail->dataset}");
+            break;
+        case "autoboot":
+            drush_print("{$jail->autoboot}");
+            break;
+        case "active_BE":
+            if (!$jail->HasBEs) {
+                drush_print("Jail not configured for BEs");
+                return;
+            }
+
+            drush_print($jail->GetActiveBE()["pretty_dataset"]);
+            break;
+        default:
+            drush_print("Unknown setting");
+            break;
+    }
+}
+
+function set_jail_var($jail, $variable, $setting)
+{
+    switch ($variable) {
+        case "dataset":
+            $jail->dataset = $setting;
+            break;
+
+        case "autoboot":
+            switch (substr(strtolower($setting), 0, 1)) {
+                case "y":
+                case "t":
+                case "1":
+                    $jail->autoboot = true;
+                    break;
+                default:
+                    $jail->autoboot = false;
+                    break;
+            }
+
+            break;
+
+        case "active_BE":
+            $jail->ActivateBE($setting);
+            break;
+    }
+
+    $jail->Persist();
 }
