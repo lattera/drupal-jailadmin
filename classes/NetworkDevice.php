@@ -28,8 +28,9 @@ class NetworkDevice {
     }
 
     public function IsOnline() {
-        $o = exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}a 2>&1 | grep -v \"does not exist\"");
-        return strlen($o) > 0;
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}a 2>&1", $output, $res);
+        return $res == 0;
     }
 
     public function BringHostOnline() {
@@ -39,14 +40,27 @@ class NetworkDevice {
         if ($this->bridge->BringOnline() == FALSE)
             return FALSE;
 
-        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} create");
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} create", $output, $res);
+        if ($res != 0)
+            return FALSE;
+
         if ($this->is_span) {
-            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->bridge->device} span {$this->device}a");
+            $output = array();
+            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->bridge->device} span {$this->device}a", $output, $res);
+            if ($res != 0)
+                return FALSE;
         } else {
-            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->bridge->device} addm {$this->device}a");
+            $output = array();
+            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->bridge->device} addm {$this->device}a", $output, $res);
+            if ($res != 0)
+                return FALSE;
         }
 
-        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}a up");
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}a up", $output, $res);
+        if ($res != 0)
+            return FALSE;
 
         watchdog("jailadmin", "VNIC @vnic created on host for jail @jail", array(
             "@vnic" => $this->device,
@@ -64,16 +78,27 @@ class NetworkDevice {
             if ($this->BringHostOnline() == FALSE)
                 return FALSE;
 
-        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}b vnet \"{$this->jail->name}\"");
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}b vnet \"{$this->jail->name}\"", $output, $res);
+        if ($res != 0)
+            return FALSE;
+
         foreach ($this->ips as $ip) {
             $inet = (strstr($ip, ':') === FALSE) ? 'inet' : 'inet6';
-            exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b {$inet} \"{$ip}\" alias");
+            $output = array();
+            exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b {$inet} \"{$ip}\" alias", $output, $res);
+            if ($res != 0)
+                return FALSE;
         }
 
-        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" /sbin/ifconfig {$this->device}b up");
+        $output = array();
+        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" /sbin/ifconfig {$this->device}b up", $output, $res);
+        if ($res != 0)
+            return FALSE;
 
-        if ($this->dhcp)
+        if ($this->dhcp) {
             exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" /sbin/dhclient {$this->device}b > /dev/null 2>&1 &");
+        }
 
         watchdog("jailadmin", "VNIC @vnic brought online on guest for jail @jail", array(
             "@vnic" => $this->device,
@@ -87,7 +112,10 @@ class NetworkDevice {
         if ($this->IsOnline() == FALSE)
             return TRUE;
 
-        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}a destroy");
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}a destroy", $output, $res);
+        if ($res != 0)
+            return FALSE;
 
         watchdog("jailadmin", "VNIC @vnic brought offline", array("@vnic" => $this->device), WATCHDOG_INFO);
 

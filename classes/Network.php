@@ -62,24 +62,40 @@ class Network {
     }
 
     public function IsOnline() {
-        $o = exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} 2>&1 | grep -v \"does not exist\"");
-        return strlen($o) > 0;
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} 2>&1", $output, $res);
+        return $res == 0;
     }
 
     public function BringOnline() {
         if ($this->IsOnline())
             return TRUE;
 
-        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} create 2>&1");
-        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} up 2>&1");
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} create 2>&1", $output, $res);
+        if ($res != 0)
+            return FALSE;
+
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} up 2>&1", $output, $res);
+        if ($res != 0)
+            return FALSE;
 
         foreach ($this->ips as $ip) {
             $inet = (strstr($ip, ':') === FALSE) ? 'inet' : 'inet6';
-            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} {$inet} {$ip} alias");
+
+            $output = array();
+            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} {$inet} {$ip} alias", $output, $res);
+            if ($res != 0)
+                return FALSE;
         }
 
-        foreach ($this->physicals as $physical)
-            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} addm {$physical}");
+        foreach ($this->physicals as $physical) {
+            $output = array();
+            exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} addm {$physical}", $output, $res);
+            if ($res != 0)
+                return FALSE;
+        }
 
         watchdog("jailadmin", "Network @network online", array("@network" => $this->name), WATCHDOG_INFO);
 
@@ -90,7 +106,10 @@ class Network {
         if ($this->IsOnline() == FALSE)
             return TRUE;
 
-        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} destroy");
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} destroy", $output, $res);
+        if ($res != 0)
+            return FALSE;
 
         watchdog("jailadmin", "Network @network offline", array("@network" => $this->name), WATCHDOG_INFO);
 

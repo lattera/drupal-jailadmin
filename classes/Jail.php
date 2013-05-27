@@ -285,19 +285,31 @@ class Jail {
 
         $hostname = (strlen($this->hostname) == 0) ? $this->name : $this->hostname;
 
-        exec("/usr/local/bin/sudo /sbin/mount -t devfs devfs {$this->path}/dev");
-        exec("/usr/local/bin/sudo /usr/sbin/jail -c vnet 'name={$this->name}' 'host.hostname={$hostname}' 'path={$this->path}' persist");
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/mount -t devfs devfs {$this->path}/dev", $output, $res);
+        if ($res != 0)
+            return FALSE;
+
+        $output = array();
+        exec("/usr/local/bin/sudo /usr/sbin/jail -c vnet 'name={$this->name}' 'host.hostname={$hostname}' 'path={$this->path}' persist", $output, $res);
+        if ($res != 0)
+            return FALSE;
 
         foreach ($this->network as $n)
-            $n->BringHostOnline();
+            if ($n->BringHostOnline() == FALSE)
+                return FALSE;
 
         foreach ($this->network as $n)
-            $n->BringGuestOnline();
+            if ($n->BringGuestOnline() == FALSE)
+                return FALSE;
 
         foreach ($this->routes as $route) {
             $inet = (strstr($route['destination'], ':') === FALSE) ? 'inet' : 'inet6';
 
-            exec("/usr/local/bin/sudo /usr/sbin/jexec '{$this->name}' route add -{$inet} '{$route['source']}' '{$route['destination']}'");
+            $output = array();
+            exec("/usr/local/bin/sudo /usr/sbin/jexec '{$this->name}' route add -{$inet} '{$route['source']}' '{$route['destination']}'", $output, $res);
+            if ($res != 0)
+                return FALSE;
         }
 
         foreach ($this->mounts as $mount) {
@@ -307,10 +319,17 @@ class Jail {
             if (strlen($mount->options))
                 $command .= "-o {$mount->options} ";
 
-            if (!is_dir("{$this->path}/{$mount->target}"))
-                exec("/usr/local/bin/sudo /bin/mkdir -p '{$this->path}/{$mount->target}'");
+            if (!is_dir("{$this->path}/{$mount->target}")) {
+                $output = array();
+                exec("/usr/local/bin/sudo /bin/mkdir -p '{$this->path}/{$mount->target}'", $output, $res);
+                if ($res != 0)
+                    return FALSE;
+            }
 
-            exec("{$command} {$mount->source} {$this->path}/{$mount->target}");
+            $output = array();
+            exec("{$command} {$mount->source} {$this->path}/{$mount->target}", $output, $res);
+            if ($res != 0)
+                return FALSE;
 
             watchdog("jailadmin", "Mounted @mount in jail @jail", array(
                 "@mount" => $mount->target,
@@ -319,7 +338,10 @@ class Jail {
         }
 
         foreach ($this->services as $service) {
-            exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" {$service->path} start");
+            $output = array();
+            exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" {$service->path} start", $output, $res);
+            if ($res != 0)
+                return FALSE;
 
             watchdog("jailadmin", "Service @service started in jail @jail", array(
                 "@service" => $service,
@@ -327,7 +349,10 @@ class Jail {
             ), WATCHDOG_INFO);
         }
 
-        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /bin/sh /etc/rc");
+        $output = array();
+        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /bin/sh /etc/rc", $output, $res);
+        if ($res != 0)
+            return FALSE;
 
         foreach ($this->network as $n)
             if ($n->ipv6)
@@ -347,13 +372,28 @@ class Jail {
         if ($this->IsOnline() == FALSE)
             return TRUE;
 
-        exec("/usr/local/bin/sudo /usr/sbin/jail -r \"{$this->name}\"");
-        exec("/usr/local/bin/sudo /sbin/umount {$this->path}/dev");
+        $output = array();
+        exec("/usr/local/bin/sudo /usr/sbin/jail -r \"{$this->name}\"", $output, $res);
+        if ($res != 0)
+            return FALSE;
+
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/umount {$this->path}/dev", $output, $res);
+        if ($res != 0)
+            return FALSE;
 
         foreach ($this->mounts as $mount) {
+            $output = array();
             $command = "/usr/local/bin/sudo /sbin/umount ";
 
-            exec("{$command} -f {$this->path}/{$mount->target}");
+            exec("{$command} -f {$this->path}/{$mount->target}", $output, $res);
+            if ($res != 0)
+                return FALSE;
+
+            watchdog("jailadmin", "Unmounted @target from jail @jail", array(
+                "@target" => $mount->target,
+                "@jail" => $this->name,
+            ), WATCHDOG_INFO);
         }
 
         foreach ($this->network as $n)
@@ -416,7 +456,10 @@ class Jail {
             }
         }
 
-        exec("/usr/local/bin/sudo /sbin/zfs snapshot {$dataset}@{$date}");
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/zfs snapshot {$dataset}@{$date}", $output, $res);
+        if ($res != 0)
+            return FALSE;
 
         watchdog("jailadmin", "Jail @jail snapshotted (@snapshot)", array(
             "@jail" => $this->name,
@@ -445,7 +488,13 @@ class Jail {
             return FALSE;
 
         watchdog("jailadmin", "Jail @jail world install started", array("@jail" => $this->name), WATCHDOG_INFO);
-        exec("cd /usr/src; /usr/local/bin/sudo make installworld DESTDIR={$this->path} > \"/tmp/upgrade-{$this->name}-{$date}.log\" 2>&1");
+        $output = array();
+        exec("cd /usr/src; /usr/local/bin/sudo make installworld DESTDIR={$this->path} > \"/tmp/upgrade-{$this->name}-{$date}.log\" 2>&1", $output, $res);
+        if ($res != 0) {
+            watchdog("jailadmin", "Jail @jail world install failed", array("@jail" => $this->name), WATCHDOG_INFO);
+            return FALSE;
+        }
+
         watchdog("jailadmin", "Jail @jail world install finished", array("@jail" => $this->name), WATCHDOG_INFO);
 
         return TRUE;
@@ -455,7 +504,10 @@ class Jail {
         $snap = $this->Snapshot($base);
         $oldbe = array();
 
-        exec("/usr/local/bin/sudo /sbin/zfs clone -o jailadmin:be_active=false {$snap} {$this->dataset}/ROOT/{$name}");
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/zfs clone -o jailadmin:be_active=false {$snap} {$this->dataset}/ROOT/{$name}", $output, $res);
+        if ($res != 0)
+            return FALSE;
 
         watchdog("jailadmin", "Jail @jail BE @be created", array(
             "@jail" => $this->name,
@@ -479,11 +531,22 @@ class Jail {
 
         $oldbe = $this->GetActiveBE();
 
-        if ($oldbe["active"])
-            exec("/usr/local/bin/sudo /sbin/zfs set jailadmin:be_active=false {$oldbe["dataset"]}");
+        if ($oldbe["active"]) {
+            $output = array();
+            exec("/usr/local/bin/sudo /sbin/zfs set jailadmin:be_active=false {$oldbe["dataset"]}", $output, $res);
+            if ($res != 0)
+                return FALSE;
+        }
 
-        exec("/usr/local/bin/sudo /sbin/zfs promote {$this->dataset}/ROOT/{$name}");
-        exec("/usr/local/bin/sudo /sbin/zfs set jailadmin:be_active=true {$this->dataset}/ROOT/{$name}");
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/zfs promote {$this->dataset}/ROOT/{$name}", $output, $res);
+        if ($res != 0)
+            return FALSE;
+
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/zfs set jailadmin:be_active=true {$this->dataset}/ROOT/{$name}", $output, $res);
+        if ($res != 0)
+            return FALSE;
 
         $this->load_boot_environments();
         $this->path = $this->GetActiveBE()["mountpoint"];
@@ -516,7 +579,10 @@ class Jail {
             return FALSE;
         }
 
-        exec("/usr/local/bin/sudo /sbin/zfs set jailadmin:be_active=false {$this->dataset}/ROOT/{$name}");
+        $output = array();
+        exec("/usr/local/bin/sudo /sbin/zfs set jailadmin:be_active=false {$this->dataset}/ROOT/{$name}", $output, $res);
+        if ($res != 0)
+            return FALSE;
 
         watchdog("jailadmin", "Jail @jail BE @be deactivated", array(
             "@jail" => $this->name,
@@ -534,7 +600,10 @@ class Jail {
                     return FALSE;
                 }
 
-                exec("/usr/local/bin/sudo /sbin/zfs destroy -r {$be["dataset"]}");
+                $output = array();
+                exec("/usr/local/bin/sudo /sbin/zfs destroy -r {$be["dataset"]}", $output, $res);
+                if ($res != 0)
+                    return FALSE;
 
                 watchdog("jailadmin", "Jail @jail BE @be deleted", array(
                     "@jail" => $this->name,
@@ -546,14 +615,6 @@ class Jail {
         }
     }
 
-    public function SetupServices() {
-        if (count($this->network)) {
-            $ip = Network::SanitizedIP($this->network[0]->ip);
-            exec("/usr/local/bin/sudo /bin/sh -c '/bin/echo \"ListenAddress {$ip}\" >> {$this->path}/etc/ssh/sshd_config'");
-            exec("/usr/local/bin/sudo /bin/sh -c '/bin/echo sshd_enable=\\\"YES\\\" >> {$this->path}/etc/rc.conf'");
-        }
-    }
-
     public function Create($template='', $usebe=FALSE) {
         $dataset = $this->dataset;
         $opts = "";
@@ -562,14 +623,25 @@ class Jail {
             /* If $template is set, we need to create this jail */
 
             if ($usebe) {
-                exec("/usr/local/bin/sudo /sbin/zfs create {$this->dataset}");
-                exec("/usr/local/bin/sudo /sbin/zfs create {$this->dataset}/ROOT");
+                $output = array();
+                exec("/usr/local/bin/sudo /sbin/zfs create {$this->dataset}", $output, $res);
+                if ($res != 0)
+                    return FALSE;
+
+                $output = array();
+                exec("/usr/local/bin/sudo /sbin/zfs create {$this->dataset}/ROOT", $output, $res);
+                if ($res != 0)
+                    return FALSE;
+
                 $dataset .= "/ROOT/base";
 
                 $opts = "-o jailadmin:be_active=true";
             }
 
-            exec("/usr/local/bin/sudo zfs clone {$opts} {$template} {$dataset}");
+            $output = array();
+            exec("/usr/local/bin/sudo zfs clone {$opts} {$template} {$dataset}", $output, $res);
+            if ($res != 0)
+                return FALSE;
         }
 
         db_insert('jailadmin_jails')
@@ -580,6 +652,8 @@ class Jail {
             ))->execute();
 
         watchdog("jailadmin", "Jail @jail created", array("@jail" => $this->name), WATCHDOG_INFO);
+
+        return TRUE;
     }
 
     public function Delete($destroy) {
@@ -603,10 +677,16 @@ class Jail {
             ->condition('name', $this->name)
             ->execute();
 
-        if ($destroy)
-            exec("/usr/local/bin/sudo /sbin/zfs destroy -r {$this->dataset}");
+        if ($destroy) {
+            $output = array();
+            exec("/usr/local/bin/sudo /sbin/zfs destroy -r {$this->dataset}", $output, $res);
+            if ($res != 0)
+                return FALSE;
+        }
 
         watchdog("jailadmin", "Jail @jail deleted", array("@jail" => $this->name), WATCHDOG_INFO);
+
+        return TRUE;
     }
 
     public function Persist() {
