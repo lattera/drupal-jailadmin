@@ -81,6 +81,8 @@ class Network {
         foreach ($this->physicals as $physical)
             exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} addm {$physical}");
 
+        watchdog("jailadmin", "Network @network online", array("@network" => $this->name), WATCHDOG_INFO);
+
         return TRUE;
     }
 
@@ -89,6 +91,8 @@ class Network {
             return TRUE;
 
         exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device} destroy");
+
+        watchdog("jailadmin", "Network @network offline", array("@network" => $this->name), WATCHDOG_INFO);
 
         return TRUE;
     }

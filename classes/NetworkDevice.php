@@ -48,6 +48,11 @@ class NetworkDevice {
 
         exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}a up");
 
+        watchdog("jailadmin", "VNIC @vnic created on host for jail @jail", array(
+            "@vnic" => $this->device,
+            "@jail" => $this->jail->name,
+        ), WATCHDOG_INFO);
+
         return TRUE;
     }
 
@@ -70,6 +75,11 @@ class NetworkDevice {
         if ($this->dhcp)
             exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" /sbin/dhclient {$this->device}b > /dev/null 2>&1 &");
 
+        watchdog("jailadmin", "VNIC @vnic brought online on guest for jail @jail", array(
+            "@vnic" => $this->device,
+            "@jail" => $this->jail->name,
+        ), WATCHDOG_INFO);
+
         return TRUE;
     }
 
@@ -78,6 +88,8 @@ class NetworkDevice {
             return TRUE;
 
         exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}a destroy");
+
+        watchdog("jailadmin", "VNIC @vnic brought offline", array("@vnic" => $this->device), WATCHDOG_INFO);
 
         return TRUE;
     }
@@ -171,6 +183,11 @@ class NetworkDevice {
                 'dhcp' => ($this->dhcp) ? 1 : 0,
             ))->execute();
 
+        watchdog("jailadmin", "VNIC @vnic assigned to jail @jail", array(
+            "@vnic" => $this->device,
+            "@jail" => $this->jail->name,
+        ), WATCHDOG_INFO);
+
         return TRUE;
     }
 
@@ -183,5 +200,10 @@ class NetworkDevice {
         db_delete('jailadmin_epair_aliases')
             ->condition('device', $this->device)
             ->execute();
+
+        watchdog("jailadmin", "VNIC @vnic (assigned to jail @jail) deleted", array(
+            "@vnic" => $this->name,
+            "@jail" => $this->jail->name,
+        ), WATCHDOG_INFO);
     }
 }

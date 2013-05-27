@@ -8,6 +8,10 @@ require_once('classes/NetworkDevice.php');
 require_once('classes/Jail.php');
 
 function jailadmin_drush_command() {
+    global $user;
+
+    $user = user_load(1);
+
     return array(
         'start' => array(
             'description' => 'Boot up a jail',

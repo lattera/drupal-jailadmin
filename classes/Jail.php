@@ -311,10 +311,21 @@ class Jail {
                 exec("/usr/local/bin/sudo /bin/mkdir -p '{$this->path}/{$mount->target}'");
 
             exec("{$command} {$mount->source} {$this->path}/{$mount->target}");
+
+            watchdog("jailadmin", "Mounted @mount in jail @jail", array(
+                "@mount" => $mount->target,
+                "@jail" => $this->name,
+            ), WATCHDOG_INFO);
         }
 
-        foreach ($this->services as $service)
+        foreach ($this->services as $service) {
             exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" {$service->path} start");
+
+            watchdog("jailadmin", "Service @service started in jail @jail", array(
+                "@service" => $service,
+                "@jail" => $this->name,
+            ), WATCHDOG_INFO);
+        }
 
         exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /bin/sh /etc/rc");
 
@@ -323,6 +334,8 @@ class Jail {
                 exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /sbin/ifconfig {$n->device}b inet6 -ifdisabled");
 
         exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /sbin/ifconfig lo0 inet 127.0.0.1");
+
+        watchdog("jailadmin", "Jail @jail started", array("@jail" => $this->name), WATCHDOG_INFO);
 
         return TRUE;
     }
@@ -345,6 +358,8 @@ class Jail {
 
         foreach ($this->network as $n)
             $n->BringOffline();
+
+        watchdog("jailadmin", "Jail @jail stopped", array("@jail" => $this->name), WATCHDOG_INFO);
 
         return TRUE;
     }
@@ -403,6 +418,11 @@ class Jail {
 
         exec("/usr/local/bin/sudo /sbin/zfs snapshot {$dataset}@{$date}");
 
+        watchdog("jailadmin", "Jail @jail snapshotted (@snapshot)", array(
+            "@jail" => $this->name,
+            "@snapshot" => "{$dataset}@{$date}",
+        ), WATCHDOG_INFO);
+
         return "{$dataset}@{$date}";
     }
 
@@ -424,7 +444,9 @@ class Jail {
         if ($this->Snapshot() == FALSE)
             return FALSE;
 
+        watchdog("jailadmin", "Jail @jail world install started", array("@jail" => $this->name), WATCHDOG_INFO);
         exec("cd /usr/src; /usr/local/bin/sudo make installworld DESTDIR={$this->path} > \"/tmp/upgrade-{$this->name}-{$date}.log\" 2>&1");
+        watchdog("jailadmin", "Jail @jail world install finished", array("@jail" => $this->name), WATCHDOG_INFO);
 
         return TRUE;
     }
@@ -434,6 +456,11 @@ class Jail {
         $oldbe = array();
 
         exec("/usr/local/bin/sudo /sbin/zfs clone -o jailadmin:be_active=false {$snap} {$this->dataset}/ROOT/{$name}");
+
+        watchdog("jailadmin", "Jail @jail BE @be created", array(
+            "@jail" => $this->name,
+            "@be" => $name
+        ), WATCHDOG_INFO);
 
         return TRUE;
     }
@@ -461,6 +488,11 @@ class Jail {
         $this->load_boot_environments();
         $this->path = $this->GetActiveBE()["mountpoint"];
 
+        watchdog("jailadmin", "Jail @jail BE @be activated", array(
+            "@jail" => $this->name,
+            "@be" => $name,
+        ), WATCHDOG_INFO);
+
         return TRUE;
     }
 
@@ -486,6 +518,11 @@ class Jail {
 
         exec("/usr/local/bin/sudo /sbin/zfs set jailadmin:be_active=false {$this->dataset}/ROOT/{$name}");
 
+        watchdog("jailadmin", "Jail @jail BE @be deactivated", array(
+            "@jail" => $this->name,
+            "@be" => $name,
+        ), WATCHDOG_INFO);
+
         return TRUE;
     }
 
@@ -498,6 +535,12 @@ class Jail {
                 }
 
                 exec("/usr/local/bin/sudo /sbin/zfs destroy -r {$be["dataset"]}");
+
+                watchdog("jailadmin", "Jail @jail BE @be deleted", array(
+                    "@jail" => $this->name,
+                    "@be" => $name,
+                ), WATCHDOG_INFO);
+
                 return TRUE;
             }
         }
@@ -535,6 +578,8 @@ class Jail {
                 'dataset' => $this->dataset,
                 'hostname' => $this->hostname,
             ))->execute();
+
+        watchdog("jailadmin", "Jail @jail created", array("@jail" => $this->name), WATCHDOG_INFO);
     }
 
     public function Delete($destroy) {
@@ -560,6 +605,8 @@ class Jail {
 
         if ($destroy)
             exec("/usr/local/bin/sudo /sbin/zfs destroy -r {$this->dataset}");
+
+        watchdog("jailadmin", "Jail @jail deleted", array("@jail" => $this->name), WATCHDOG_INFO);
     }
 
     public function Persist() {
