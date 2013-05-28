@@ -36,6 +36,49 @@ class Mount {
         return $mount;
     }
 
+    public function DoMount() {
+        $command = "/usr/local/bin/sudo /sbin/mount ";
+        if (strlen($this->driver))
+            $command .= "-t {$this->driver} ";
+        if (strlen($this->options))
+            $command .= "-o {$this->options} ";
+
+        if (!is_dir("{$this->jail->path}/{$this->target}")) {
+            $output = array();
+            exec("/usr/local/bin/sudo /bin/mkdir -p '{$this->jail->path}/{$this->target}'", $output, $res);
+            if ($res != 0)
+                return FALSE;
+        }
+
+        $output = array();
+        exec("{$command} {$this->source} {$this->jail->path}/{$this->target}", $output, $res);
+        if ($res != 0)
+            return FALSE;
+
+        watchdog("jailadmin", "Mounted @mount in jail @jail", array(
+            "@mount" => $this->target,
+            "@jail" => $this->jail->name,
+        ), WATCHDOG_INFO);
+
+        return TRUE;
+    }
+
+    public function Unmount() {
+        $output = array();
+        $command = "/usr/local/bin/sudo /sbin/umount ";
+
+        exec("{$command} -f {$this->jail->path}/{$this->target}", $output, $res);
+        if ($res != 0)
+            return FALSE;
+
+        watchdog("jailadmin", "Unmounted @target from jail @jail", array(
+            "@target" => $this->target,
+            "@jail" => $this->jail->name,
+        ), WATCHDOG_INFO);
+
+        return TRUE;
+    }
+
     public function Create() {
         db_insert('jailadmin_mounts')
             ->fields(array(
