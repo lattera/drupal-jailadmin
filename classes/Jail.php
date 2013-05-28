@@ -269,6 +269,19 @@ class Jail {
         return $status;
     }
 
+    protected function ungraceful_stop($ret=FALSE) {
+        exec("/usr/local/bin/sudo /usr/sbin/jail -r \"{$this->name}\"");
+        exec("/usr/local/bin/sudo /sbin/umount {$this->path}/dev");
+
+        foreach ($this->mounts as $mount)
+            $mount->Unmount();
+
+        foreach ($this->network as $n)
+            $n->BringOffline();
+
+        return $ret;
+    }
+
     public function Start() {
         if ($this->MultipleActiveBEs)
             return FALSE;
@@ -293,15 +306,15 @@ class Jail {
         $output = array();
         exec("/usr/local/bin/sudo /usr/sbin/jail -c vnet 'name={$this->name}' 'host.hostname={$hostname}' 'path={$this->path}' persist", $output, $res);
         if ($res != 0)
-            return FALSE;
+            return $this->ungraceful_stop();
 
         foreach ($this->network as $n)
             if ($n->BringHostOnline() == FALSE)
-                return FALSE;
+                return $this->ungraceful_stop();
 
         foreach ($this->network as $n)
             if ($n->BringGuestOnline() == FALSE)
-                return FALSE;
+                return $this->ungraceful_stop();
 
         foreach ($this->routes as $route) {
             $inet = (strstr($route['destination'], ':') === FALSE) ? 'inet' : 'inet6';
@@ -309,12 +322,12 @@ class Jail {
             $output = array();
             exec("/usr/local/bin/sudo /usr/sbin/jexec '{$this->name}' route add -{$inet} '{$route['source']}' '{$route['destination']}'", $output, $res);
             if ($res != 0)
-                return FALSE;
+                return $this->ungraceful_stop();
         }
 
         foreach ($this->mounts as $mount) {
             if ($mount->DoMount() == FALSE) {
-                return FALSE;
+                return $this->ungraceful_stop();
             }
         }
 
@@ -322,7 +335,7 @@ class Jail {
             $output = array();
             exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" {$service->path} start", $output, $res);
             if ($res != 0)
-                return FALSE;
+                return $this->ungraceful_stop();
 
             watchdog("jailadmin", "Service @service started in jail @jail", array(
                 "@service" => $service,
@@ -333,7 +346,7 @@ class Jail {
         $output = array();
         exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /bin/sh /etc/rc", $output, $res);
         if ($res != 0)
-            return FALSE;
+            return $this->ungraceful_stop();
 
         foreach ($this->network as $n)
             if ($n->ipv6)
