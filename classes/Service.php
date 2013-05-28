@@ -24,6 +24,20 @@ class Service {
         return $service;
     }
 
+    public function Start() {
+        $output = array();
+        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" {$this->path} start", $output, $res);
+        if ($res != 0)
+            return FALSE;
+
+        watchdog("jailadmin", "Service @service started in jail @jail", array(
+            "@service" => $service,
+            "@jail" => $this->name,
+        ), WATCHDOG_INFO);
+
+        return TRUE;
+    }
+
     public function Create() {
         db_insert('jailadmin_services')
             ->fields(array(

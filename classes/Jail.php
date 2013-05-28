@@ -332,15 +332,8 @@ class Jail {
         }
 
         foreach ($this->services as $service) {
-            $output = array();
-            exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" {$service->path} start", $output, $res);
-            if ($res != 0)
+            if ($service->Start() != TRUE)
                 return $this->ungraceful_stop();
-
-            watchdog("jailadmin", "Service @service started in jail @jail", array(
-                "@service" => $service,
-                "@jail" => $this->name,
-            ), WATCHDOG_INFO);
         }
 
         $output = array();
