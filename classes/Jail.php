@@ -239,32 +239,8 @@ class Jail {
     public function NetworkStatus() {
         $status = "";
 
-        foreach ($this->network as $n) {
-            $status .= (strlen($status) ? ", " : "") . "{$n->bridge->name}[{$n->device} { ";
-            $i= 0;
-            if ($n->is_span) {
-                $i++;
-                $status .= "(SPAN)";
-            }
-
-            if ($n->dhcp) {
-                $o = "";
-                if ($this->IsOnline())
-                    $o = exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" ifconfig {$n->device}b 2>&1 | grep -w inet | awk '{print $2;}'");
-                $status .= ($i++ > 0 ? "," : "") . " (DHCP" . (strlen($o) ? ": {$o}" : "") . ")";
-            }
-
-            if (!count($n->ips))
-                $status .= ($i++ > 0 ? "," : " ") . " (NO STATIC IP)";
-
-            foreach ($n->ips as $ip) {
-                $status .= ($i++ > 0 ? "," : "") . " {$ip}";
-            }
-
-            $status .= ($n->IsOnline()) ? " (online)" : " (offline)";
-
-            $status .= " }]";
-        }
+        foreach ($this->network as $n)
+            $status .= (strlen($status) ? ", " : "") . $n->Status();
 
         return $status;
     }
@@ -362,12 +338,12 @@ class Jail {
         $output = array();
         exec("/usr/local/bin/sudo /usr/sbin/jail -r \"{$this->name}\"", $output, $res);
         if ($res != 0)
-            return FALSE;
+            return $this->ungraceful_stop();
 
         $output = array();
         exec("/usr/local/bin/sudo /sbin/umount {$this->path}/dev", $output, $res);
         if ($res != 0)
-            return FALSE;
+            return $this->ungraceful_stop();
 
         foreach ($this->mounts as $mount) {
             $mount->Unmount();

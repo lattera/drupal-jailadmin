@@ -234,4 +234,33 @@ class NetworkDevice {
             "@jail" => $this->jail->name,
         ), WATCHDOG_INFO);
     }
+
+    public function Status() {
+        $status = "{$this->bridge->name}[{$this->device} { ";
+        $i= 0;
+        if ($this->is_span) {
+            $i++;
+            $status .= "(SPAN)";
+        }
+
+        if ($this->dhcp) {
+            $o = "";
+            if ($this->jail->IsOnline())
+                $o = exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b 2>&1 | grep -w inet | awk '{print $2;}'");
+            $status .= ($i++ > 0 ? "," : "") . " (DHCP" . (strlen($o) ? ": {$o}" : "") . ")";
+        }
+
+        if (!count($this->ips))
+            $status .= ($i++ > 0 ? "," : " ") . " (NO STATIC IP)";
+
+        foreach ($this->ips as $ip) {
+            $status .= ($i++ > 0 ? "," : "") . " {$ip}";
+        }
+
+        $status .= ($this->jail->IsOnline()) ? " (online)" : " (offline)";
+
+        $status .= " }]";
+
+        return $status;
+    }
 }
