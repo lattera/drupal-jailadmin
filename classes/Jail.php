@@ -609,6 +609,83 @@ class Jail {
         return TRUE;
     }
 
+    public function CloneJail($name, $dataset, $hostname='') {
+        $opts = "";
+        if ($hostname == '')
+            $hostname = $name;
+
+        $newdataset = $dataset;
+        if ($this->HasBEs) {
+            $output = array();
+            exec("/usr/local/bin/sudo /sbin/zfs create {$dataset}", $output, $res);
+            if ($res != 0) {
+                return FALSE;
+            }
+
+            $output = array();
+            exec("/usr/local/bin/sudo /sbin/zfs create {$dataset}/ROOT", $output, $res);
+            if ($res != 0) {
+                exec("/usr/local/bin/sudo /sbin/zfs destroy {$dataset}");
+                return FALSE;
+            }
+
+            $newdataset .= "/ROOT/base";
+            $opts = "-o jailadmin:be_active=true";
+        }
+
+        $snapshot = $this->Snapshot();
+        if ($snapshot === FALSE)
+            return FALSE;
+
+        $output = array();
+        exec("/usr/local/bin/sudo zfs clone {$opts} {$snapshot} {$newdataset}", $output, $res);
+        if ($res != 0)
+            return FALSE;
+
+        db_insert('jailadmin_jails')
+            ->fields(array(
+                'name' => $name,
+                'dataset' => $dataset,
+                'hostname' => $hostname,
+            ))->execute();
+
+        $jail = Jail::Load($name);
+
+        foreach ($this->network as $n) {
+            $newn = new NetworkDevice;
+
+            $newn->device = 'epair' . NetworkDevice::NextAvailableDevice();
+            $newn->is_span = $n->is_span;
+            $newn->dhcp = $n->dhcp;
+            $newn->bridge = $n->bridge;
+            $newn->jail = $jail;
+
+            $newn->Create();
+        }
+
+        foreach ($this->routes as $route) {
+            db_insert('jailadmin_routes')
+                ->fields(array(
+                    'jail' => $name,
+                    'source' => $route['source'],
+                    'destination' => $route['destination'],
+                ))->execute();
+        }
+
+        foreach ($this->mounts as $mount) {
+            db_insert('jailadmin_mounts')
+                ->fields(array(
+                    'jail' => $name,
+                    'source' => $mount->source,
+                    'target' => $mount->target,
+                    'driver' => $mount->driver,
+                    'options' => $mount->options,
+                ))->execute();
+        }
+
+        return TRUE;
+    }
+
     public function Delete($destroy) {
         if ($this->IsOnline())
             $this->Stop();
@@ -632,7 +709,7 @@ class Jail {
 
         if ($destroy) {
             $output = array();
-            exec("/usr/local/bin/sudo /sbin/zfs destroy -r {$this->dataset}", $output, $res);
+            exec("/usr/local/bin/sudo /sbin/zfs destroy -r {$this->dataset} 2>&1", $output, $res);
             if ($res != 0)
                 return FALSE;
         }

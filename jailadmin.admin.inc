@@ -25,6 +25,7 @@ function jailadmin_admin_settings($form, &$form_state) {
             '#multiple' => TRUE,
             '#description' => t('Select one or more to delete'),
             '#options' => $jails,
+            '#size' => (int)(count($jails)/3),
         );
 
         $form['jails']['zfs_destroy'] = array(

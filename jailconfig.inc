@@ -333,6 +333,41 @@ function jailadmin_config($form, &$form_state) {
         );
     }
 
+    $form['clone_jail'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Clone Jail'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+    );
+
+    $form['clone_jail']['clone_name'] = array(
+        '#type' => 'textfield',
+        '#title' => t('New Jail Name'),
+        '#size' => 60,
+        '#disabled' => $readonly,
+    );
+
+    $form['clone_jail']['clone_dataset'] = array(
+        '#type' => 'textfield',
+        '#title' => t('New Jail Dataset'),
+        '#size' => 60,
+        '#disabled' => $readonly,
+    );
+
+    $form['clone_jail']['clone_hostname'] = array(
+        '#type' => 'textfield',
+        '#title' => t('New Jail Hostname'),
+        '#size' => 60,
+        '#disabled' => $readonly,
+    );
+
+    $form['clone_jail']['clone_submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Create Clone',
+        '#submit' => array('create_clone'),
+        '#disabled' => $readonly,
+    );
+
     $form['jail_actions'] = array(
         '#type' => 'fieldset',
         '#title' => t('Jail Actions'),
@@ -743,4 +778,33 @@ function deactivate_boot_environment($form, &$form_state) {
             }
         }
     }
+}
+
+function create_clone($form, &$form_state) {
+    $jail = Jail::Load($form_state['build_info']['args'][0]);
+    $name = '';
+    $dataset = '';
+    $hostname = '';
+
+    if (isset($form_state['values']['clone_name']))
+        $name = $form_state['values']['clone_name'];
+
+    if (isset($form_state['values']['clone_dataset']))
+        $dataset = $form_state['values']['clone_dataset'];
+
+    if (isset($form_state['values']['clone_hostname']))
+        $hostname = $form_state['values']['clone_hostname'];
+
+    if ($name == '' || $dataset == '') {
+        drupal_set_message(t('Please set the name and dataset of the clone'), 'error');
+        $form_state['rebuild'] = TRUE;
+        return;
+    }
+
+    if ($jail->CloneJail($name, $dataset, $hostname))
+        drupal_set_message(t('Clone created successfully'));
+    else
+        drupal_set_message(t('Failed creating clone'));
+
+    $form_state['rebuild'] = TRUE;
 }

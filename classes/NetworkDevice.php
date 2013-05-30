@@ -230,7 +230,7 @@ class NetworkDevice {
             ->execute();
 
         watchdog("jailadmin", "VNIC @vnic (assigned to jail @jail) deleted", array(
-            "@vnic" => $this->name,
+            "@vnic" => $this->device,
             "@jail" => $this->jail->name,
         ), WATCHDOG_INFO);
     }
