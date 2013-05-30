@@ -401,6 +401,13 @@ function jailadmin_config($form, &$form_state) {
         '#disabled' => $jail->IsOnline() || $readonly || $jail->MultipleActiveBEs || ($jail->ZeroActiveBEs && $jail->HasBEs),
     );
 
+    $form['jail_actions']['delete_jail'] = array(
+        '#type' => 'submit',
+        '#value' => t('Delete Jail'),
+        '#submit' => array('delete_jail'),
+        '#disabled' => $readonly,
+    );
+
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Save Configuration'),
@@ -801,10 +808,28 @@ function create_clone($form, &$form_state) {
         return;
     }
 
-    if ($jail->CloneJail($name, $dataset, $hostname))
+    if ($jail->CloneJail($name, $dataset, $hostname)) {
         drupal_set_message(t('Clone created successfully'));
-    else
+        drupal_goto("jailadmin/{$name}/config");
+    } else {
         drupal_set_message(t('Failed creating clone'));
+        $form_state['rebuild'] = TRUE;
+    }
+}
 
-    $form_state['rebuild'] = TRUE;
+function delete_jail($form, &$form_state) {
+    $jail = Jail::Load($form_state['build_info']['args'][0]);
+
+    if (user_access("config {$jail->name}") == FALSE || user_access('administer jails') == FALSE) {
+        drupal_set_message(t('Access Denied'), 'error');
+        $form_state['rebuild'] = TRUE;
+        return;
+    }
+
+    if ($jail->Delete(TRUE) == TRUE)
+        drupal_set_message(t('Jail successfully deleted'));
+    else
+        drupal_set_message(t('Jail could not be deleted'), 'error');
+
+    drupal_goto('jailadmin/status');
 }
