@@ -8,10 +8,6 @@ require_once('classes/NetworkDevice.php');
 require_once('classes/Jail.php');
 
 function jailadmin_drush_command() {
-    global $user;
-
-    $user = user_load(1);
-
     return array(
         'start' => array(
             'description' => 'Boot up a jail',
@@ -113,10 +109,24 @@ function jailadmin_drush_command() {
             ),
             'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN,
         ),
+        'clone_jail' => array(
+            'description' => 'Clone a jail',
+            'arguments' => array(
+                'jailname' => 'Name of the jail to clone',
+                'newname' => 'Name of the new jail',
+                'newdataset' => 'ZFS dataset of the new jail',
+                'hostname' => 'Hostname of the new jail',
+            ),
+            'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN,
+        ),
     );
 }
 
 function drush_jailadmin_autoboot() {
+    global $user;
+
+    $user = user_load(1);
+
     $jails = Jail::LoadAll();
 
     foreach ($jails as $jail) {
@@ -127,6 +137,10 @@ function drush_jailadmin_autoboot() {
 }
 
 function drush_jailadmin_start($jailname='') {
+    global $user;
+
+    $user = user_load(1);
+
     if ($jailname == '') {
         drush_print("Please provide a jail name");
         return;
@@ -142,6 +156,10 @@ function drush_jailadmin_start($jailname='') {
 }
 
 function drush_jailadmin_stop($jailname='') {
+    global $user;
+
+    $user = user_load(1);
+
     if ($jailname == '') {
         drush_print("Please provide a jail name");
         return;
@@ -157,6 +175,10 @@ function drush_jailadmin_stop($jailname='') {
 }
 
 function drush_jailadmin_stopall() {
+    global $user;
+
+    $user = user_load(1);
+
     $jails = Jail::LoadAll();
     foreach ($jails as $jail)
         if ($jail->IsOnline())
@@ -164,6 +186,10 @@ function drush_jailadmin_stopall() {
 }
 
 function drush_jailadmin_jail_status($jailname='') {
+    global $user;
+
+    $user = user_load(1);
+
     $jails = array();
 
     if ($jailname == '')
@@ -193,6 +219,10 @@ function drush_jailadmin_jail_status($jailname='') {
 }
 
 function drush_jailadmin_list_snapshots($jailname='') {
+    global $user;
+
+    $user = user_load(1);
+
     if ($jailname == '') {
         drush_print("Please provide a jail name");
         return;
@@ -210,6 +240,10 @@ function drush_jailadmin_list_snapshots($jailname='') {
 }
 
 function drush_jailadmin_snapshot_jail($jailname='', $base='') {
+    global $user;
+
+    $user = user_load(1);
+
     if ($jailname == '') {
         drush_print("Please provide a jail name");
         return;
@@ -225,6 +259,10 @@ function drush_jailadmin_snapshot_jail($jailname='', $base='') {
 }
 
 function drush_jailadmin_delete_snapshot($jailname='', $snapshot='') {
+    global $user;
+
+    $user = user_load(1);
+
     if ($jailname == '') {
         drush_print("Please provide a jail name");
         return;
@@ -245,6 +283,10 @@ function drush_jailadmin_delete_snapshot($jailname='', $snapshot='') {
 }
 
 function drush_jailadmin_list_BEs($jailname) {
+    global $user;
+
+    $user = user_load(1);
+
     if ($jailname == '') {
         drush_print("Please provide a jail name");
         return;
@@ -267,6 +309,10 @@ function drush_jailadmin_list_BEs($jailname) {
 }
 
 function drush_jailadmin_create_BE($jailname='', $bename='') {
+    global $user;
+
+    $user = user_load(1);
+
     if ($jailname == '') {
         drush_print("Please provide a jail name");
         return;
@@ -287,6 +333,10 @@ function drush_jailadmin_create_BE($jailname='', $bename='') {
 }
 
 function drush_jailadmin_activate_BE($jailname='', $bename='') {
+    global $user;
+
+    $user = user_load(1);
+
     if ($jailname == '') {
         drush_print("Please provide a jail name");
         return;
@@ -307,6 +357,10 @@ function drush_jailadmin_activate_BE($jailname='', $bename='') {
 }
 
 function drush_jailadmin_delete_BE($jailname='', $bename='') {
+    global $user;
+
+    $user = user_load(1);
+
     if ($jailname == '') {
         drush_print("Please provide a jail name");
         return;
@@ -327,6 +381,10 @@ function drush_jailadmin_delete_BE($jailname='', $bename='') {
 }
 
 function drush_jailadmin_deactivate_BE($jailname='', $bename='') {
+    global $user;
+
+    $user = user_load(1);
+
     if ($jailname == '') {
         drush_print("Please provide a jail name");
         return;
@@ -347,6 +405,10 @@ function drush_jailadmin_deactivate_BE($jailname='', $bename='') {
 }
 
 function drush_jailadmin_jail($jailname='', $variable='', $setting='') {
+    global $user;
+
+    $user = user_load(1);
+
     if ($jailname == '') {
         drush_print("Please provide a jail name");
         return;
@@ -417,4 +479,37 @@ function set_jail_var($jail, $variable, $setting)
     }
 
     $jail->Persist();
+}
+
+function drush_jailadmin_clone_jail($jailname='', $newname='', $newdataset='', $newhostname='') {
+    global $user;
+
+    $user = user_load(1);
+
+    if ($jailname == '') {
+        drush_print("Please specify a valid jail name");
+        return;
+    }
+
+    if ($newname == '') {
+        drush_print("Please specify the name of the new jail");
+        return;
+    }
+
+    if ($newdataset == '') {
+        drush_print("Please specify the dataset of the new jail");
+        return;
+    }
+
+    $jail = Jail::Load($jailname);
+
+    if ($jail === FALSE) {
+        drush_print("Jail not found");
+        return;
+    }
+
+    if ($jail->CloneJail($newname, $newdataset, $newhostname) == FALSE)
+        drush_print("Could not clone jail");
+    else
+        drush_print("Clone successful");
 }

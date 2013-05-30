@@ -683,6 +683,11 @@ class Jail {
                 ))->execute();
         }
 
+        watchdog("jailadmin", "Cloned jail @jail to new jail @newjail", array(
+            '@jail' => $this->name,
+            '@newjail' => $name,
+        ), WATCHDOG_INFO);
+
         return TRUE;
     }
 
