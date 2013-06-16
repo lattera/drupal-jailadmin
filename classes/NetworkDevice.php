@@ -80,21 +80,43 @@ class NetworkDevice {
 
         $output = array();
         exec("/usr/local/bin/sudo /sbin/ifconfig {$this->device}b vnet \"{$this->jail->name}\"", $output, $res);
-        if ($res != 0)
+        if ($res != 0) {
+            watchdog("jailadmin", "Could not assign @devb to @jail", array(
+                "@dev" => $this->device,
+                "@jail" => $this->jail->name,
+            ), WATCHDOG_ERROR);
+
             return FALSE;
+        }
 
         foreach ($this->ips as $ip) {
             $inet = (strstr($ip, ':') === FALSE) ? 'inet' : 'inet6';
             $output = array();
-            exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b {$inet} \"{$ip}\" alias", $output, $res);
-            if ($res != 0)
+            $cmd = "/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" ifconfig {$this->device}b {$inet} \"{$ip}\" alias 2>&1";
+            exec($cmd, $output, $res);
+            if ($res != 0) {
+                watchdog("jailadmin", "Failed to assign static IP of @ip to @dev for @jail. cmd: @cmd. Dump: @dump", array(
+                    "@ip" => $ip,
+                    "@dev" => $this->device,
+                    "@jail" => $this->jail->name,
+                    "@dump" => var_export($output, true),
+                    "@cmd" => $cmd,
+                ), WATCHDOG_ERROR);
+
                 return FALSE;
+            }
         }
 
         $output = array();
         exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" /sbin/ifconfig {$this->device}b up", $output, $res);
-        if ($res != 0)
+        if ($res != 0) {
+            watchdog("jailadmin", "Could not bring @dev up in @jail", array(
+                "@dev" => $this->device,
+                "@jail" => $this->jail->name,
+            ), WATCHDOG_ERROR);
+
             return FALSE;
+        }
 
         if ($this->dhcp) {
             exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->jail->name}\" /sbin/dhclient {$this->device}b > /dev/null 2>&1 &");

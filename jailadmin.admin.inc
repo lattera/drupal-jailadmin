@@ -147,17 +147,24 @@ function jailadmin_admin_settings_submit($form, &$form_state) {
         if (isset($form_state['values']['new_use_be']) && $form_state['values']['new_use_be'] == 1)
             $usebe = TRUE;
 
+        if ("${template}" == "0")
+            $template = '';
+
         $j = new Jail;
         $j->name = $name;
         $j->dataset = $dataset;
         $j->hostname = $hostname;
 
-        $j->Create($template, $usebe);
+        if ($j->Create($template, $usebe) == FALSE) {
+            drupal_set_message(t("Failed to create the jail"), "error");
+        } else {
+            drupal_set_message(t("Successfully created the jail"));
 
-        $form_state['input']['new_name'] = '';
-        $form_state['input']['new_dataset'] = '';
-        $form_state['input']['new_template'] = '';
-        $form_state['input']['new_hostname'] = '';
+            $form_state['input']['new_name'] = '';
+            $form_state['input']['new_dataset'] = '';
+            $form_state['input']['new_template'] = '';
+            $form_state['input']['new_hostname'] = '';
+        }
     }
 
     if (isset($form_state['values']['new_template_name']) && strlen($form_state['values']['new_template_name'])) {
