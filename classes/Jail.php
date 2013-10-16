@@ -349,18 +349,18 @@ class Jail {
                 return $this->ungraceful_stop();
         }
 
-        foreach ($this->network as $n)
-            if ($n->ipv6)
-                exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /sbin/ifconfig {$n->device}b inet6 -ifdisabled");
-
         exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /sbin/ifconfig lo0 inet 127.0.0.1");
 
         $output = array();
-        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /bin/sh /etc/rc", $output, $res);
+        exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /bin/sh /etc/rc 2>&1", $output, $res);
         if ($res != 0) {
-            watchdog("jailadmin", "The rc script failed for @jail", array("@jail" => $this->name), WATCHDOG_ERROR);
+            watchdog("jailadmin", "The rc script failed for @jail: @output", array("@jail" => $this->name, "@output" => $output), WATCHDOG_ERROR);
             return $this->ungraceful_stop();
         }
+
+        foreach ($this->network as $n)
+            if ($n->ipv6)
+                exec("/usr/local/bin/sudo /usr/sbin/jexec \"{$this->name}\" /sbin/ifconfig {$n->device}b inet6 -ifdisabled");
 
         watchdog("jailadmin", "Jail @jail started", array("@jail" => $this->name), WATCHDOG_INFO);
 

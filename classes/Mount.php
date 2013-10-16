@@ -45,15 +45,31 @@ class Mount {
 
         if (!is_dir("{$this->jail->path}/{$this->target}")) {
             $output = array();
+            $res = 0;
             exec("/usr/local/bin/sudo /bin/mkdir -p '{$this->jail->path}/{$this->target}'", $output, $res);
-            if ($res != 0)
+            if ($res != 0) {
+            watchdog("jailadmin", "Creation of mountpoint @mount in jail @jail: @reason", array(
+                "@jail" => $this->jail->name,
+                "@mount" => "{$this->jail->path}{$this->target}",
+                "@reason" => var_export($output, TRUE)
+            ), WATCHDOG_ERROR);
+
                 return FALSE;
+            }
         }
 
         $output = array();
+        $res = 0;
         exec("{$command} {$this->source} {$this->jail->path}/{$this->target}", $output, $res);
-        if ($res != 0)
+        if ($res != 0) {
+            watchdog("jailadmin", "Failed mounting @mount in jail @jail: @reason", array(
+                "@jail" => $this->jail->name,
+                "@mount" => $this->target,
+                "@reason" => var_export($output, TRUE)
+            ), WATCHDOG_ERROR);
+
             return FALSE;
+        }
 
         watchdog("jailadmin", "Mounted @mount in jail @jail", array(
             "@mount" => $this->target,
